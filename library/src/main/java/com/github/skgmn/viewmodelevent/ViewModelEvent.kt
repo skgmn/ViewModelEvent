@@ -61,6 +61,7 @@ class ViewModelEvent<T : Any> {
                 val channel = synchronized(lock) {
                     channels[viewId] ?: Channel<T>(Channel.UNLIMITED).also {
                         channels[viewId] = it
+                        addViewIdContainerTo(viewId)
                     }
                 }
                 try {
@@ -76,9 +77,7 @@ class ViewModelEvent<T : Any> {
             viewId: RetainedViewId,
             binding: EventHandlerBinding<T>) {
 
-        val channel = synchronized(lock) {
-            channels[viewId]
-        } ?: return
+        val channel = synchronized(lock) { channels[viewId] } ?: return
 
         try {
             while (true) {
@@ -89,18 +88,24 @@ class ViewModelEvent<T : Any> {
         }
 
         synchronized(lock) {
-            tryRemoveViewIdContainer(viewId)
+            tryRemoveViewIdContainerFrom(viewId)
         }
+    }
+
+    @GuardedBy("lock")
+    private fun addViewIdContainerTo(viewId: RetainedViewId) {
+        viewId.addContainer(viewIdContainer)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @GuardedBy("lock")
-    private fun tryRemoveViewIdContainer(viewId: RetainedViewId) {
+    private fun tryRemoveViewIdContainerFrom(viewId: RetainedViewId) {
         val channel = channels[viewId]
         if (viewId !in bindings &&
                 viewId !in activatedBindings &&
                 (channel?.isEmpty != false || channel.isClosedForReceive)) {
-            viewId.containers -= viewIdContainer
+
+            viewId.removeContainer(viewIdContainer)
             channel?.close()
             channels -= viewId
         }
@@ -113,8 +118,6 @@ class ViewModelEvent<T : Any> {
             handler: suspend (T) -> Unit) {
 
         val viewId = ViewModelProvider(viewModelStoreOwner).get(RetainedViewId::class.java)
-        viewId.containers += viewIdContainer
-
         synchronized(lock) {
             bindings.remove(viewId)?.unbind()
 
@@ -123,16 +126,18 @@ class ViewModelEvent<T : Any> {
                         consumePendingEvents(viewId, binding)
                         synchronized(lock) {
                             activatedBindings += viewId
+                            addViewIdContainerTo(viewId)
                         }
                     },
                     onUnbind = {
                         synchronized(lock) {
                             activatedBindings -= viewId
                             bindings -= viewId
-                            tryRemoveViewIdContainer(viewId)
+                            tryRemoveViewIdContainerFrom(viewId)
                         }
                     })
             bindings[viewId] = newBinding
+            addViewIdContainerTo(viewId)
             newBinding.bind()
         }
     }
