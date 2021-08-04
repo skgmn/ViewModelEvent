@@ -23,12 +23,6 @@ internal class RetainedViewId : ViewModel() {
         }
     }
 
-    fun removeContainer(container: RetainedViewIdContainer) {
-        synchronized(containers) {
-            containers -= container
-        }
-    }
-
     override fun onCleared() {
         super.onCleared()
         cleared = true

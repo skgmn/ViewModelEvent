@@ -1,30 +1,47 @@
 package com.github.skgmn.viewmodelevent
 
+import androidx.annotation.MainThread
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 
-internal class EventHandlerBinding<T>(
-        val lifecycleOwner: LifecycleOwner,
-        val handler: suspend (T) -> Unit,
-        private val onBind: (EventHandlerBinding<T>) -> Unit,
+internal class EventHandlerBinding(
+        private val onReady: () -> Unit,
         private val onUnbind: () -> Unit) {
 
     private val lifecycleObserver = object : DefaultLifecycleObserver {
         override fun onCreate(owner: LifecycleOwner) {
-            onBind(this@EventHandlerBinding)
+            onReady()
         }
 
         override fun onDestroy(owner: LifecycleOwner) {
-            onUnbind()
+            println("onDestroy owner: $owner")
             unbind()
         }
     }
 
-    fun bind() {
-        lifecycleOwner.lifecycle.addObserver(lifecycleObserver)
+    private var lifecycleOwner: LifecycleOwner? = null
+    private var unbound = false
+
+    @MainThread
+    fun bindTo(lifecycleOwner: LifecycleOwner) {
+        if (!unbound && this.lifecycleOwner == null) {
+            this.lifecycleOwner = lifecycleOwner
+            lifecycleOwner.lifecycle.addObserver(lifecycleObserver)
+        } else {
+            throw IllegalStateException()
+        }
     }
 
+    @MainThread
     fun unbind() {
-        lifecycleOwner.lifecycle.removeObserver(lifecycleObserver)
+        if (unbound) {
+            return
+        }
+        unbound = true
+        lifecycleOwner?.let {
+            it.lifecycle.removeObserver(lifecycleObserver)
+            lifecycleOwner = null
+        }
+        onUnbind()
     }
 }

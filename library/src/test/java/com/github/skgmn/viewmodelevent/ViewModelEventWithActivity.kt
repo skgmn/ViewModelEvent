@@ -17,18 +17,22 @@ class ViewModelEventWithActivity {
     val activityScenarioRule = activityScenarioRule<TestActivity>()
 
     @Test
-    fun immediateRunOnStart() {
+    fun immediateWhenStarted() {
         val scenario = activityScenarioRule.scenario
         scenario.onActivity { activity ->
             assertEquals(0, activity.eventResults.size)
-            activity.viewModel.viewModelEvent.dispatchEvent(Unit)
-            assertEquals(1, activity.eventResults.size)
-            assertEquals(Unit, activity.eventResults[0])
+            activity.viewModel.viewModelEvent.dispatchEvent(1234)
+            activity.viewModel.viewModelEvent.dispatchEvent(5678)
+            activity.viewModel.viewModelEvent.dispatchEvent(9012)
+            assertEquals(3, activity.eventResults.size)
+            assertEquals(1234, activity.eventResults[0])
+            assertEquals(5678, activity.eventResults[1])
+            assertEquals(9012, activity.eventResults[2])
         }
     }
 
     @Test
-    fun delayedRunOnStopStart() {
+    fun delayedOnStopStart() {
         val scenario = activityScenarioRule.scenario
         scenario.moveToState(Lifecycle.State.CREATED)
         scenario.onActivity { activity ->
@@ -44,15 +48,17 @@ class ViewModelEventWithActivity {
     }
 
     @Test
-    fun delayedRunOnRecreate() {
+    fun delayedOnRecreate() {
         val scenario = activityScenarioRule.scenario
         scenario.onActivity { activity ->
             // use LifecycleObserver instead of moveToState() because
             // recreate() forces activity to be onResume state before actual recreation
             // which makes us hard to test `dispatching event after onStop` scenario.
             activity.lifecycle.addObserver(object : DefaultLifecycleObserver {
-                override fun onStop(owner: LifecycleOwner) {
+                override fun onDestroy(owner: LifecycleOwner) {
                     activity.viewModel.viewModelEvent.dispatchEvent(1234)
+                    activity.viewModel.viewModelEvent.dispatchEvent(5678)
+                    activity.viewModel.viewModelEvent.dispatchEvent(9012)
                     assertEquals(0, activity.eventResults.size)
                     activity.lifecycle.removeObserver(this)
                 }
@@ -60,8 +66,11 @@ class ViewModelEventWithActivity {
         }
         scenario.recreate()
         scenario.onActivity { activity ->
-            assertEquals(1, activity.eventResults.size)
+            println("activity lifecycle after recreate: ${activity.lifecycle.currentState}")
+            assertEquals(3, activity.eventResults.size)
             assertEquals(1234, activity.eventResults[0])
+            assertEquals(5678, activity.eventResults[1])
+            assertEquals(9012, activity.eventResults[2])
         }
     }
 
