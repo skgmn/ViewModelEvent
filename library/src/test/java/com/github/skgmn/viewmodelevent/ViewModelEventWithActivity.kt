@@ -3,7 +3,6 @@ package com.github.skgmn.viewmodelevent
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.ViewModelProvider
 import androidx.test.ext.junit.rules.activityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.assertEquals
@@ -66,7 +65,6 @@ class ViewModelEventWithActivity {
         }
         scenario.recreate()
         scenario.onActivity { activity ->
-            println("activity lifecycle after recreate: ${activity.lifecycle.currentState}")
             assertEquals(3, activity.eventResults.size)
             assertEquals(1234, activity.eventResults[0])
             assertEquals(5678, activity.eventResults[1])

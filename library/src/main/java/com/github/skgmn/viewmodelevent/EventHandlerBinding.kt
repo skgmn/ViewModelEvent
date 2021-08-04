@@ -14,7 +14,6 @@ internal class EventHandlerBinding(
         }
 
         override fun onDestroy(owner: LifecycleOwner) {
-            println("onDestroy owner: $owner")
             unbind()
         }
     }
