@@ -55,7 +55,7 @@ class ViewModelEventWithActivity {
             // recreate() forces activity to be onResume state before actual recreation
             // which makes us hard to test `dispatching event after onStop` scenario.
             activity.lifecycle.addObserver(object : DefaultLifecycleObserver {
-                override fun onDestroy(owner: LifecycleOwner) {
+                override fun onStop(owner: LifecycleOwner) {
                     activity.viewModel.viewModelEvent.dispatchEvent(1234)
                     activity.viewModel.viewModelEvent.dispatchEvent(5678)
                     activity.viewModel.viewModelEvent.dispatchEvent(9012)
