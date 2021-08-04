@@ -2,46 +2,30 @@ package com.github.skgmn.viewmodelevent
 
 import androidx.annotation.MainThread
 import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 
 internal class EventHandlerQueue<T> {
     private val emptyReceiver: suspend (T) -> Unit = { }
     private val scope = CoroutineScope(Dispatchers.Main.immediate)
     private val channel = Channel<T>(Channel.UNLIMITED)
-    private val receiverChannel = Channel<suspend (T) -> Unit>(
-        1, BufferOverflow.DROP_OLDEST
-    )
+    private val receiverFlow = MutableStateFlow(emptyReceiver)
 
     fun runConsumerLoop() {
-        var savedReceiver: (suspend (T) -> Unit)? = null
-        fun pollReceiver(): (suspend (T) -> Unit)? {
-            val receiver = receiverChannel.poll()
-            return if (receiver == null) {
-                savedReceiver
-            } else {
-                receiver.takeIf { it !== emptyReceiver }.also {
-                    savedReceiver = it
-                }
-            }
-        }
-
         scope.launch(Dispatchers.Main.immediate) {
             try {
                 while (true) {
                     val event = channel.receive()
                     while (true) {
-                        val receiver = pollReceiver()
-                            ?: receiverChannel.receive().takeIf { it !== emptyReceiver }.also {
-                                savedReceiver = it
-                            }
-                            ?: continue
+                        val receiver = receiverFlow.filter { it !== emptyReceiver }.first()
                         try {
                             receiver(event)
                         } catch (e: CancellationException) {
                             // this receiver is cancelled
-                            savedReceiver = null
+                            receiverFlow.value = emptyReceiver
                             continue
                         }
                         break
@@ -55,7 +39,7 @@ internal class EventHandlerQueue<T> {
 
     @MainThread
     fun setReceiver(receiver: (suspend (T) -> Unit)?) {
-        receiverChannel.offer(receiver ?: emptyReceiver)
+        receiverFlow.value = receiver ?: emptyReceiver
     }
 
     fun offer(event: T) {
@@ -64,7 +48,6 @@ internal class EventHandlerQueue<T> {
 
     fun dispose() {
         scope.cancel()
-        receiverChannel.close()
         channel.close()
     }
 }
