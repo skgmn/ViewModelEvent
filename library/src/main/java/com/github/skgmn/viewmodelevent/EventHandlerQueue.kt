@@ -8,7 +8,7 @@ internal class EventHandlerQueue<T> {
     private val emptyReceiver: suspend (T) -> Unit = { }
     private val scope = CoroutineScope(Dispatchers.Main.immediate)
     private val eventFlow = MutableSharedFlow<T>(
-        extraBufferCapacity = Int.MAX_VALUE
+            extraBufferCapacity = Int.MAX_VALUE
     )
     private val receiverFlow = MutableStateFlow(emptyReceiver)
 
@@ -30,7 +30,6 @@ internal class EventHandlerQueue<T> {
         }
     }
 
-    @MainThread
     fun setReceiver(receiver: (suspend (T) -> Unit)?) {
         receiverFlow.value = receiver ?: emptyReceiver
     }

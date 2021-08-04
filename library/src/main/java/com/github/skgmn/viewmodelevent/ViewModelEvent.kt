@@ -35,10 +35,9 @@ class ViewModelEvent<T : Any> {
 
     @MainThread
     internal fun replaceHandler(
-        viewModelStoreOwner: ViewModelStoreOwner,
-        lifecycleOwner: LifecycleOwner,
-        handler: (T) -> Unit
-    ) {
+            viewModelStoreOwner: ViewModelStoreOwner,
+            lifecycleOwner: LifecycleOwner,
+            handler: (T) -> Unit) {
 
         val viewId = ViewModelProvider(viewModelStoreOwner).get(RetainedViewId::class.java)
         synchronized(queues) {
