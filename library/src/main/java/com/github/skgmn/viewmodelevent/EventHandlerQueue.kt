@@ -2,37 +2,30 @@ package com.github.skgmn.viewmodelevent
 
 import androidx.annotation.MainThread
 import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.ClosedReceiveChannelException
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.*
 
 internal class EventHandlerQueue<T> {
     private val emptyReceiver: suspend (T) -> Unit = { }
     private val scope = CoroutineScope(Dispatchers.Main.immediate)
-    private val channel = Channel<T>(Channel.UNLIMITED)
+    private val eventFlow = MutableSharedFlow<T>(
+        extraBufferCapacity = Int.MAX_VALUE
+    )
     private val receiverFlow = MutableStateFlow(emptyReceiver)
 
     fun runConsumerLoop() {
-        scope.launch(Dispatchers.Main.immediate) {
-            try {
+        scope.launch {
+            eventFlow.collect { event ->
                 while (true) {
-                    val event = channel.receive()
-                    while (true) {
-                        val receiver = receiverFlow.filter { it !== emptyReceiver }.first()
-                        try {
-                            receiver(event)
-                        } catch (e: CancellationException) {
-                            // this receiver is cancelled
-                            receiverFlow.value = emptyReceiver
-                            continue
-                        }
-                        break
+                    val receiver = receiverFlow.filter { it !== emptyReceiver }.first()
+                    try {
+                        receiver(event)
+                    } catch (e: CancellationException) {
+                        // this receiver is cancelled
+                        receiverFlow.value = emptyReceiver
+                        continue
                     }
+                    break
                 }
-            } catch (e: ClosedReceiveChannelException) {
-                // queue disposed
             }
         }
     }
@@ -43,11 +36,10 @@ internal class EventHandlerQueue<T> {
     }
 
     fun offer(event: T) {
-        channel.offer(event)
+        eventFlow.tryEmit(event)
     }
 
     fun dispose() {
         scope.cancel()
-        channel.close()
     }
 }
