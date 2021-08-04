@@ -55,10 +55,8 @@ class ViewModelEvent<T : Any> {
                     }
                 }
                 queue.setReceiver { event ->
-                    withContext(lifecycleOwner.lifecycleScope.coroutineContext) {
-                        lifecycleOwner.lifecycle.whenStarted {
-                            handler(event)
-                        }
+                    lifecycleOwner.lifecycle.whenStarted {
+                        handler(event)
                     }
                 }
             }, onUnbind = {
