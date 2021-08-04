@@ -5,11 +5,9 @@ import androidx.annotation.GuardedBy
 import androidx.annotation.MainThread
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.*
-import kotlinx.coroutines.*
+import kotlinx.coroutines.withContext
 import java.util.*
 import kotlin.collections.set
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 class ViewModelEvent<T : Any> {
     @GuardedBy("bindings")
@@ -58,8 +56,11 @@ class ViewModelEvent<T : Any> {
                     }
                 }
                 queue.setReceiver { event ->
-                    lifecycleOwner.awaitStateStarted()
-                    handler(event)
+                    withContext(lifecycleOwner.lifecycleScope.coroutineContext) {
+                        lifecycleOwner.lifecycle.whenStarted {
+                            handler(event)
+                        }
+                    }
                 }
             }, onUnbind = {
                 synchronized(queues) {
@@ -71,34 +72,6 @@ class ViewModelEvent<T : Any> {
             })
             bindings[lifecycleOwner] = binding
             binding.bindTo(lifecycleOwner)
-        }
-    }
-
-    private suspend fun LifecycleOwner.awaitStateStarted() {
-        if (lifecycle.currentState == Lifecycle.State.DESTROYED) {
-            throw CancellationException()
-        }
-        if (lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
-            return
-        }
-        suspendCancellableCoroutine<Any> { cont ->
-            val observer = object : LifecycleEventObserver {
-                override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
-                    if (lifecycle.currentState == Lifecycle.State.DESTROYED) {
-                        lifecycle.removeObserver(this)
-                        cont.resumeWithException(CancellationException())
-                    } else if (lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
-                        lifecycle.removeObserver(this)
-                        cont.resume(Unit)
-                    }
-                }
-            }
-            lifecycle.addObserver(observer)
-            cont.invokeOnCancellation {
-                GlobalScope.launch(Dispatchers.Main.immediate) {
-                    lifecycle.removeObserver(observer)
-                }
-            }
         }
     }
 }
