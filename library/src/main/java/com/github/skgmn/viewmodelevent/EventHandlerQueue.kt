@@ -1,6 +1,5 @@
 package com.github.skgmn.viewmodelevent
 
-import androidx.annotation.MainThread
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
@@ -15,16 +14,23 @@ internal class EventHandlerQueue<T> {
     fun runConsumerLoop() {
         scope.launch {
             eventFlow.collect { event ->
-                while (true) {
-                    val receiver = receiverFlow.filter { it !== emptyReceiver }.first()
-                    try {
-                        receiver(event)
-                    } catch (e: CancellationException) {
-                        // this receiver is cancelled
-                        receiverFlow.value = emptyReceiver
-                        continue
+                try {
+                    coroutineScope {
+                        receiverFlow.collectLatest { receiver ->
+                            if (receiver === emptyReceiver) {
+                                return@collectLatest
+                            }
+                            try {
+                                receiver(event)
+                                cancel()
+                            } catch (e: CancellationException) {
+                                // this receiver is cancelled
+                                receiverFlow.value = emptyReceiver
+                            }
+                        }
                     }
-                    break
+                } catch (e: CancellationException) {
+                    // canceled after successful event passing
                 }
             }
         }
