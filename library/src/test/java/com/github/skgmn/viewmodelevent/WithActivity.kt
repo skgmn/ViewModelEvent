@@ -15,7 +15,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class EventPassingWithActivity {
+class WithActivity {
     @get:Rule
     val activityScenarioRule = activityScenarioRule<TestActivity>()
 
@@ -24,9 +24,9 @@ class EventPassingWithActivity {
         val scenario = activityScenarioRule.scenario
         scenario.onActivity { activity ->
             assertEquals(0, activity.eventResults.size)
-            activity.viewModel.viewModelEvent.dispatchEvent(1234)
-            activity.viewModel.viewModelEvent.dispatchEvent(5678)
-            activity.viewModel.viewModelEvent.dispatchEvent(9012)
+            activity.viewModel.normalEvent.dispatchEvent(1234)
+            activity.viewModel.normalEvent.dispatchEvent(5678)
+            activity.viewModel.normalEvent.dispatchEvent(9012)
             assertEquals(3, activity.eventResults.size)
             assertEquals(1234, activity.eventResults[0])
             assertEquals(5678, activity.eventResults[1])
@@ -40,7 +40,7 @@ class EventPassingWithActivity {
         scenario.moveToState(Lifecycle.State.CREATED)
         scenario.onActivity { activity ->
             assertEquals(0, activity.eventResults.size)
-            activity.viewModel.viewModelEvent.dispatchEvent(Unit)
+            activity.viewModel.normalEvent.dispatchEvent(Unit)
             assertEquals(0, activity.eventResults.size)
         }
         scenario.moveToState(Lifecycle.State.STARTED)
@@ -59,9 +59,9 @@ class EventPassingWithActivity {
             // which makes us hard to test `dispatching event after onStop` scenario.
             activity.lifecycle.addObserver(object : DefaultLifecycleObserver {
                 override fun onStop(owner: LifecycleOwner) {
-                    activity.viewModel.viewModelEvent.dispatchEvent(1234)
-                    activity.viewModel.viewModelEvent.dispatchEvent(5678)
-                    activity.viewModel.viewModelEvent.dispatchEvent(9012)
+                    activity.viewModel.normalEvent.dispatchEvent(1234)
+                    activity.viewModel.normalEvent.dispatchEvent(5678)
+                    activity.viewModel.normalEvent.dispatchEvent(9012)
                     assertEquals(0, activity.eventResults.size)
                     activity.lifecycle.removeObserver(this)
                 }
@@ -83,24 +83,90 @@ class EventPassingWithActivity {
         // save activity instance in advance because it can't be done after destroyed
         scenario.onActivity { activity = it }
         scenario.moveToState(Lifecycle.State.DESTROYED)
-        activity.viewModel.viewModelEvent.dispatchEvent(1234)
+        activity.viewModel.normalEvent.dispatchEvent(1234)
         assertEquals(0, activity.eventResults.size)
+    }
+
+    @Test
+    fun recentHandlerReplacesPreviousOne() {
+        val scenario = activityScenarioRule.scenario
+        scenario.onActivity { activity ->
+            activity.viewModel.handledManyTimesEvent.dispatchEvent(1234)
+            activity.viewModel.handledManyTimesEvent.dispatchEvent(5678)
+            assertEquals(0, activity.eventResults.size)
+            assertEquals(2, activity.eventResults2.size)
+            assertEquals(1234, activity.eventResults2[0])
+            assertEquals(5678, activity.eventResults2[1])
+        }
+    }
+
+    @Test
+    fun ignoreEventsBeforeFirstHandling() {
+        val scenario = activityScenarioRule.scenario
+        scenario.onActivity { activity ->
+            activity.viewModel.ignoredBeforeFirstHandlingEvent.dispatchEvent(1234)
+            activity.viewModel.ignoredBeforeFirstHandlingEvent.dispatchEvent(5678)
+            assertEquals(0, activity.eventResults.size)
+        }
+        scenario.moveToState(Lifecycle.State.STARTED)
+        scenario.onActivity { activity ->
+            assertEquals(0, activity.eventResults.size)
+            activity.viewModel.ignoredBeforeFirstHandlingEvent.dispatchEvent("foo")
+            activity.viewModel.ignoredBeforeFirstHandlingEvent.dispatchEvent("bar")
+            assertEquals(2, activity.eventResults.size)
+            assertEquals("foo", activity.eventResults[0])
+            assertEquals("bar", activity.eventResults[1])
+        }
     }
 
     class TestActivity : AppCompatActivity() {
         val viewModel: TestViewModel by viewModels()
 
         val eventResults = mutableListOf<Any>()
+        val eventResults2 = mutableListOf<Any>()
 
         override fun onCreate(savedInstanceState: Bundle?) {
             super.onCreate(savedInstanceState)
-            handleEvent(viewModel.viewModelEvent) {
-                eventResults += it
+            viewModel.run {
+                handleEvent(normalEvent) {
+                    eventResults += it
+                }
+                handleEvent(handledManyTimesEvent) {
+                    eventResults += it
+                }
             }
+        }
+
+        override fun onStart() {
+            super.onStart()
+            viewModel.run {
+                handleEvent(handledManyTimesEvent) {
+                }
+            }
+        }
+
+        override fun onResume() {
+            super.onResume()
+            viewModel.run {
+                handleEvent(handledManyTimesEvent) {
+                    eventResults2 += it
+                }
+            }
+        }
+
+        override fun onPause() {
+            viewModel.run {
+                handleEvent(ignoredBeforeFirstHandlingEvent) {
+                    eventResults += it
+                }
+            }
+            super.onPause()
         }
     }
 
     class TestViewModel : ViewModel() {
-        val viewModelEvent = ViewModelEvent<Any>()
+        val normalEvent = ViewModelEvent<Any>()
+        val handledManyTimesEvent = ViewModelEvent<Any>()
+        val ignoredBeforeFirstHandlingEvent = ViewModelEvent<Any>()
     }
 }

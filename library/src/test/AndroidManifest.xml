@@ -4,10 +4,10 @@
 
     <application>
         <activity
-            android:name=".EventPassingWithActivity$TestActivity"
+            android:name=".WithActivity$TestActivity"
             android:theme="@style/Theme.AppCompat" />
         <activity
-            android:name=".ConsecutiveHandleEvent$TestActivity"
+            android:name=".WithFragment$TestActivity"
             android:theme="@style/Theme.AppCompat" />
     </application>
 
