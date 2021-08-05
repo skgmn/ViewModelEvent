@@ -37,6 +37,7 @@ class ViewModelEvent<T : Any> {
     internal fun replaceHandler(
             viewModelStoreOwner: ViewModelStoreOwner,
             lifecycleOwner: LifecycleOwner,
+            backpressure: EventBackpressure,
             handler: (T) -> Unit) {
 
         val viewId = ViewModelProvider(viewModelStoreOwner).get(RetainedViewId::class.java)
@@ -48,7 +49,7 @@ class ViewModelEvent<T : Any> {
 
             val binding = EventHandlerBinding(onReady = {
                 val queue = synchronized(queues) {
-                    queues[viewId] ?: EventHandlerQueue<T>().also {
+                    queues[viewId] ?: EventHandlerQueue<T>(backpressure).also {
                         queues[viewId] = it
                         it.runConsumerLoop()
                         viewId.addContainer(viewIdContainer)
@@ -74,11 +75,19 @@ class ViewModelEvent<T : Any> {
 }
 
 @MainThread
-fun <T : Any> ComponentActivity.handle(event: ViewModelEvent<T>, handler: (T) -> Unit) {
-    event.replaceHandler(this, this, handler)
+fun <T : Any> ComponentActivity.handle(
+        event: ViewModelEvent<T>,
+        backpressure: EventBackpressure = EventBackpressure.LATEST,
+        handler: (T) -> Unit) {
+
+    event.replaceHandler(this, this, backpressure, handler)
 }
 
 @MainThread
-fun <T : Any> Fragment.handle(event: ViewModelEvent<T>, handler: (T) -> Unit) {
-    event.replaceHandler(this, this, handler)
+fun <T : Any> Fragment.handle(
+        event: ViewModelEvent<T>,
+        backpressure: EventBackpressure = EventBackpressure.LATEST,
+        handler: (T) -> Unit) {
+
+    event.replaceHandler(this, this, backpressure, handler)
 }

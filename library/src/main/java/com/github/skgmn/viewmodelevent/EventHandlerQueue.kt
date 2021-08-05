@@ -3,11 +3,12 @@ package com.github.skgmn.viewmodelevent
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
-internal class EventHandlerQueue<T> {
+internal class EventHandlerQueue<T>(backpressure: EventBackpressure) {
     private val emptyReceiver: suspend (T) -> Unit = { }
     private val scope = CoroutineScope(Dispatchers.Main.immediate)
     private val eventFlow = MutableSharedFlow<T>(
-            extraBufferCapacity = Int.MAX_VALUE
+            extraBufferCapacity = backpressure.extraBufferCapacity,
+            onBufferOverflow = backpressure.onBufferOverflow
     )
     private val receiverFlow = MutableStateFlow(emptyReceiver)
 

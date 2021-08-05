@@ -15,7 +15,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class WithActivity {
+class WithActivityLatest {
     @get:Rule
     val activityScenarioRule = activityScenarioRule<TestActivity>()
 
@@ -40,13 +40,17 @@ class WithActivity {
         scenario.moveToState(Lifecycle.State.CREATED)
         scenario.onActivity { activity ->
             assertEquals(0, activity.eventResults.size)
-            activity.viewModel.normalEvent.post(Unit)
+            activity.viewModel.normalEvent.post(1234)
+            activity.viewModel.normalEvent.post(5678)
+            activity.viewModel.normalEvent.post(9012)
+            activity.viewModel.normalEvent.post(3456)
             assertEquals(0, activity.eventResults.size)
         }
         scenario.moveToState(Lifecycle.State.STARTED)
         scenario.onActivity { activity ->
-            assertEquals(1, activity.eventResults.size)
-            assertEquals(Unit, activity.eventResults[0])
+            assertEquals(2, activity.eventResults.size)
+            assertEquals(1234, activity.eventResults[0])
+            assertEquals(3456, activity.eventResults[1])
         }
     }
 
@@ -62,6 +66,7 @@ class WithActivity {
                     activity.viewModel.normalEvent.post(1234)
                     activity.viewModel.normalEvent.post(5678)
                     activity.viewModel.normalEvent.post(9012)
+                    activity.viewModel.normalEvent.post(3456)
                     assertEquals(0, activity.eventResults.size)
                     activity.lifecycle.removeObserver(this)
                 }
@@ -69,10 +74,9 @@ class WithActivity {
         }
         scenario.recreate()
         scenario.onActivity { activity ->
-            assertEquals(3, activity.eventResults.size)
+            assertEquals(2, activity.eventResults.size)
             assertEquals(1234, activity.eventResults[0])
-            assertEquals(5678, activity.eventResults[1])
-            assertEquals(9012, activity.eventResults[2])
+            assertEquals(3456, activity.eventResults[1])
         }
     }
 
@@ -93,10 +97,12 @@ class WithActivity {
         scenario.onActivity { activity ->
             activity.viewModel.handledManyTimesEvent.post(1234)
             activity.viewModel.handledManyTimesEvent.post(5678)
+            activity.viewModel.handledManyTimesEvent.post(9012)
             assertEquals(0, activity.eventResults.size)
-            assertEquals(2, activity.eventResults2.size)
+            assertEquals(3, activity.eventResults2.size)
             assertEquals(1234, activity.eventResults2[0])
             assertEquals(5678, activity.eventResults2[1])
+            assertEquals(9012, activity.eventResults2[2])
         }
     }
 
@@ -106,6 +112,7 @@ class WithActivity {
         scenario.onActivity { activity ->
             activity.viewModel.ignoredBeforeFirstHandlingEvent.post(1234)
             activity.viewModel.ignoredBeforeFirstHandlingEvent.post(5678)
+            activity.viewModel.ignoredBeforeFirstHandlingEvent.post(9012)
             assertEquals(0, activity.eventResults.size)
         }
         scenario.moveToState(Lifecycle.State.STARTED)
@@ -113,9 +120,11 @@ class WithActivity {
             assertEquals(0, activity.eventResults.size)
             activity.viewModel.ignoredBeforeFirstHandlingEvent.post("foo")
             activity.viewModel.ignoredBeforeFirstHandlingEvent.post("bar")
-            assertEquals(2, activity.eventResults.size)
+            activity.viewModel.ignoredBeforeFirstHandlingEvent.post("baz")
+            assertEquals(3, activity.eventResults.size)
             assertEquals("foo", activity.eventResults[0])
             assertEquals("bar", activity.eventResults[1])
+            assertEquals("baz", activity.eventResults[2])
         }
     }
 
@@ -128,10 +137,10 @@ class WithActivity {
         override fun onCreate(savedInstanceState: Bundle?) {
             super.onCreate(savedInstanceState)
             viewModel.run {
-                handle(normalEvent) {
+                handle(normalEvent, EventBackpressure.LATEST) {
                     eventResults += it
                 }
-                handle(handledManyTimesEvent) {
+                handle(handledManyTimesEvent, EventBackpressure.LATEST) {
                     eventResults += it
                 }
             }
@@ -140,7 +149,7 @@ class WithActivity {
         override fun onStart() {
             super.onStart()
             viewModel.run {
-                handle(handledManyTimesEvent) {
+                handle(handledManyTimesEvent, EventBackpressure.LATEST) {
                 }
             }
         }
@@ -148,7 +157,7 @@ class WithActivity {
         override fun onResume() {
             super.onResume()
             viewModel.run {
-                handle(handledManyTimesEvent) {
+                handle(handledManyTimesEvent, EventBackpressure.LATEST) {
                     eventResults2 += it
                 }
             }
@@ -156,7 +165,7 @@ class WithActivity {
 
         override fun onPause() {
             viewModel.run {
-                handle(ignoredBeforeFirstHandlingEvent) {
+                handle(ignoredBeforeFirstHandlingEvent, EventBackpressure.LATEST) {
                     eventResults += it
                 }
             }

@@ -4,10 +4,10 @@
 
     <application>
         <activity
-            android:name=".WithActivity$TestActivity"
+            android:name=".WithActivityBuffer$TestActivity"
             android:theme="@style/Theme.AppCompat" />
         <activity
-            android:name=".WithFragment$TestActivity"
+            android:name=".WithActivityLatest$TestActivity"
             android:theme="@style/Theme.AppCompat" />
     </application>
 
