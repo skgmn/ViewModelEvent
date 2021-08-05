@@ -1,8 +1,12 @@
 package com.github.skgmn.viewmodelevent
 
+import android.os.Bundle
+import androidx.activity.viewModels
+import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ViewModel
 import androidx.test.ext.junit.rules.activityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.assertEquals
@@ -11,7 +15,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class ViewModelEventWithActivity {
+class EventPassingWithActivity {
     @get:Rule
     val activityScenarioRule = activityScenarioRule<TestActivity>()
 
@@ -81,5 +85,22 @@ class ViewModelEventWithActivity {
         scenario.moveToState(Lifecycle.State.DESTROYED)
         activity.viewModel.viewModelEvent.dispatchEvent(1234)
         assertEquals(0, activity.eventResults.size)
+    }
+
+    class TestActivity : AppCompatActivity() {
+        val viewModel: TestViewModel by viewModels()
+
+        val eventResults = mutableListOf<Any>()
+
+        override fun onCreate(savedInstanceState: Bundle?) {
+            super.onCreate(savedInstanceState)
+            handleEvent(viewModel.viewModelEvent) {
+                eventResults += it
+            }
+        }
+    }
+
+    class TestViewModel : ViewModel() {
+        val viewModelEvent = ViewModelEvent<Any>()
     }
 }

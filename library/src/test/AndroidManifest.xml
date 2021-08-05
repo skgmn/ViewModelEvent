@@ -4,7 +4,10 @@
 
     <application>
         <activity
-            android:name=".TestActivity"
+            android:name=".EventPassingWithActivity$TestActivity"
+            android:theme="@style/Theme.AppCompat" />
+        <activity
+            android:name=".ConsecutiveHandleEvent$TestActivity"
             android:theme="@style/Theme.AppCompat" />
     </application>
 
