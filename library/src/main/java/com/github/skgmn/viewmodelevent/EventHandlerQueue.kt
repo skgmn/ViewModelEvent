@@ -3,7 +3,7 @@ package com.github.skgmn.viewmodelevent
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
-internal class EventHandlerQueue<T>(backpressure: EventBackpressure) {
+internal class EventHandlerQueue<T>(private val backpressure: EventBackpressure) {
     private val emptyReceiver: suspend (T) -> Unit = { }
     private val scope = CoroutineScope(Dispatchers.Main.immediate)
     private val eventFlow = MutableSharedFlow<T>(
@@ -14,26 +14,44 @@ internal class EventHandlerQueue<T>(backpressure: EventBackpressure) {
 
     fun runConsumerLoop() {
         scope.launch {
-            eventFlow.collect { event ->
-                try {
-                    coroutineScope {
-                        receiverFlow.collectLatest { receiver ->
-                            if (receiver === emptyReceiver) {
-                                return@collectLatest
-                            }
-                            try {
-                                receiver(event)
-                                cancel()
-                            } catch (e: CancellationException) {
-                                // this receiver is cancelled
-                                receiverFlow.value = emptyReceiver
-                            }
-                        }
-                    }
-                } catch (e: CancellationException) {
-                    // canceled after successful event passing
+            if (backpressure == EventBackpressure.BUFFER) {
+                eventFlow.collect { event ->
+                    passToReceiver(event)
+                }
+            } else if (backpressure == EventBackpressure.LATEST) {
+                eventFlow.collectLatest { event ->
+                    passToReceiver(event)
                 }
             }
+        }
+    }
+
+    private suspend fun passToReceiver(event: T) {
+        try {
+            coroutineScope {
+                receiverFlow.collectLatest { receiver ->
+                    if (receiver === emptyReceiver) {
+                        return@collectLatest
+                    }
+                    try {
+                        receiver(event)
+                        cancel()
+                    } catch (e: CancellationException) {
+                        // This receiver is cancelled.
+                        //
+                        // Radically, receiver should be reset to null when receiver is cancelled
+                        // from the inside of it. But mere CancellationException cannot distinct the
+                        // source of the cancellation, so just do not do that.
+                        // For now, receiver will be set to null from ViewModelEvent when receiver
+                        // is cancelled because both conditions of them are same.
+                        // (receiver is cancelled on onDestroy(), and just in time,
+                        //  ViewModelEvent sets receiver null on onDestroy())
+                        // I don't know what to do when this becomes not the case.
+                    }
+                }
+            }
+        } catch (e: CancellationException) {
+            // canceled after successful event passing
         }
     }
 

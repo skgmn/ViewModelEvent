@@ -45,12 +45,9 @@ class WithActivityLatest {
             activity.viewModel.normalEvent.post(9012)
             activity.viewModel.normalEvent.post(3456)
             assertEquals(0, activity.eventResults.size)
-        }
-        scenario.moveToState(Lifecycle.State.STARTED)
-        scenario.onActivity { activity ->
-            assertEquals(2, activity.eventResults.size)
-            assertEquals(1234, activity.eventResults[0])
-            assertEquals(3456, activity.eventResults[1])
+            scenario.moveToState(Lifecycle.State.STARTED)
+            assertEquals(1, activity.eventResults.size)
+            assertEquals(3456, activity.eventResults[0])
         }
     }
 
@@ -74,9 +71,8 @@ class WithActivityLatest {
         }
         scenario.recreate()
         scenario.onActivity { activity ->
-            assertEquals(2, activity.eventResults.size)
-            assertEquals(1234, activity.eventResults[0])
-            assertEquals(3456, activity.eventResults[1])
+            assertEquals(1, activity.eventResults.size)
+            assertEquals(3456, activity.eventResults[0])
         }
     }
 
