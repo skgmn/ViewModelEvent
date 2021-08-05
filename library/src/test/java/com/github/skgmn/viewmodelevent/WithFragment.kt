@@ -1,7 +1,6 @@
 package com.github.skgmn.viewmodelevent
 
 import android.os.Bundle
-import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -27,9 +26,9 @@ class WithFragment {
         scenario.onActivity { activity ->
             val fragment = activity.fragment
             assertEquals(0, fragment.eventResults.size)
-            fragment.viewModel.normalEvent.dispatchEvent(1234)
-            fragment.viewModel.normalEvent.dispatchEvent(5678)
-            fragment.viewModel.normalEvent.dispatchEvent(9012)
+            fragment.viewModel.normalEvent.post(1234)
+            fragment.viewModel.normalEvent.post(5678)
+            fragment.viewModel.normalEvent.post(9012)
             assertEquals(3, fragment.eventResults.size)
             assertEquals(1234, fragment.eventResults[0])
             assertEquals(5678, fragment.eventResults[1])
@@ -44,7 +43,7 @@ class WithFragment {
         scenario.onActivity { activity ->
             val fragment = activity.fragment
             assertEquals(0, fragment.eventResults.size)
-            fragment.viewModel.normalEvent.dispatchEvent(Unit)
+            fragment.viewModel.normalEvent.post(Unit)
             assertEquals(0, fragment.eventResults.size)
         }
         scenario.moveToState(Lifecycle.State.STARTED)
@@ -65,9 +64,9 @@ class WithFragment {
             // which makes us hard to test `dispatching event after onStop` scenario.
             activity.lifecycle.addObserver(object : DefaultLifecycleObserver {
                 override fun onDestroy(owner: LifecycleOwner) {
-                    fragment.viewModel.normalEvent.dispatchEvent(1234)
-                    fragment.viewModel.normalEvent.dispatchEvent(5678)
-                    fragment.viewModel.normalEvent.dispatchEvent(9012)
+                    fragment.viewModel.normalEvent.post(1234)
+                    fragment.viewModel.normalEvent.post(5678)
+                    fragment.viewModel.normalEvent.post(9012)
                     assertEquals(0, fragment.eventResults.size)
                     fragment.lifecycle.removeObserver(this)
                 }
@@ -91,7 +90,7 @@ class WithFragment {
         scenario.onActivity { activity = it }
         scenario.moveToState(Lifecycle.State.DESTROYED)
         val fragment = activity.fragment
-        fragment.viewModel.normalEvent.dispatchEvent(1234)
+        fragment.viewModel.normalEvent.post(1234)
         assertEquals(0, fragment.eventResults.size)
     }
 
@@ -100,8 +99,8 @@ class WithFragment {
         val scenario = activityScenarioRule.scenario
         scenario.onActivity { activity ->
             val fragment = activity.fragment
-            fragment.viewModel.handledManyTimesEvent.dispatchEvent(1234)
-            fragment.viewModel.handledManyTimesEvent.dispatchEvent(5678)
+            fragment.viewModel.handledManyTimesEvent.post(1234)
+            fragment.viewModel.handledManyTimesEvent.post(5678)
             assertEquals(0, fragment.eventResults.size)
             assertEquals(2, fragment.eventResults2.size)
             assertEquals(1234, fragment.eventResults2[0])
@@ -114,16 +113,16 @@ class WithFragment {
         val scenario = activityScenarioRule.scenario
         scenario.onActivity { activity ->
             val fragment = activity.fragment
-            fragment.viewModel.ignoredBeforeFirstHandlingEvent.dispatchEvent(1234)
-            fragment.viewModel.ignoredBeforeFirstHandlingEvent.dispatchEvent(5678)
+            fragment.viewModel.ignoredBeforeFirstHandlingEvent.post(1234)
+            fragment.viewModel.ignoredBeforeFirstHandlingEvent.post(5678)
             assertEquals(0, fragment.eventResults.size)
         }
         scenario.moveToState(Lifecycle.State.STARTED)
         scenario.onActivity { activity ->
             val fragment = activity.fragment
             assertEquals(0, fragment.eventResults.size)
-            fragment.viewModel.ignoredBeforeFirstHandlingEvent.dispatchEvent("foo")
-            fragment.viewModel.ignoredBeforeFirstHandlingEvent.dispatchEvent("bar")
+            fragment.viewModel.ignoredBeforeFirstHandlingEvent.post("foo")
+            fragment.viewModel.ignoredBeforeFirstHandlingEvent.post("bar")
             assertEquals(2, fragment.eventResults.size)
             assertEquals("foo", fragment.eventResults[0])
             assertEquals("bar", fragment.eventResults[1])
@@ -157,10 +156,10 @@ class WithFragment {
         override fun onCreate(savedInstanceState: Bundle?) {
             super.onCreate(savedInstanceState)
             viewModel.run {
-                handleEvent(normalEvent) {
+                handle(normalEvent) {
                     eventResults += it
                 }
-                handleEvent(handledManyTimesEvent) {
+                handle(handledManyTimesEvent) {
                     eventResults += it
                 }
             }
@@ -169,7 +168,7 @@ class WithFragment {
         override fun onStart() {
             super.onStart()
             viewModel.run {
-                handleEvent(handledManyTimesEvent) {
+                handle(handledManyTimesEvent) {
                 }
             }
         }
@@ -177,7 +176,7 @@ class WithFragment {
         override fun onResume() {
             super.onResume()
             viewModel.run {
-                handleEvent(handledManyTimesEvent) {
+                handle(handledManyTimesEvent) {
                     eventResults2 += it
                 }
             }
@@ -185,7 +184,7 @@ class WithFragment {
 
         override fun onPause() {
             viewModel.run {
-                handleEvent(ignoredBeforeFirstHandlingEvent) {
+                handle(ignoredBeforeFirstHandlingEvent) {
                     eventResults += it
                 }
             }

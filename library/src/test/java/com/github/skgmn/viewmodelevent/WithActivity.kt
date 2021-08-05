@@ -24,9 +24,9 @@ class WithActivity {
         val scenario = activityScenarioRule.scenario
         scenario.onActivity { activity ->
             assertEquals(0, activity.eventResults.size)
-            activity.viewModel.normalEvent.dispatchEvent(1234)
-            activity.viewModel.normalEvent.dispatchEvent(5678)
-            activity.viewModel.normalEvent.dispatchEvent(9012)
+            activity.viewModel.normalEvent.post(1234)
+            activity.viewModel.normalEvent.post(5678)
+            activity.viewModel.normalEvent.post(9012)
             assertEquals(3, activity.eventResults.size)
             assertEquals(1234, activity.eventResults[0])
             assertEquals(5678, activity.eventResults[1])
@@ -40,7 +40,7 @@ class WithActivity {
         scenario.moveToState(Lifecycle.State.CREATED)
         scenario.onActivity { activity ->
             assertEquals(0, activity.eventResults.size)
-            activity.viewModel.normalEvent.dispatchEvent(Unit)
+            activity.viewModel.normalEvent.post(Unit)
             assertEquals(0, activity.eventResults.size)
         }
         scenario.moveToState(Lifecycle.State.STARTED)
@@ -59,9 +59,9 @@ class WithActivity {
             // which makes us hard to test `dispatching event after onStop` scenario.
             activity.lifecycle.addObserver(object : DefaultLifecycleObserver {
                 override fun onStop(owner: LifecycleOwner) {
-                    activity.viewModel.normalEvent.dispatchEvent(1234)
-                    activity.viewModel.normalEvent.dispatchEvent(5678)
-                    activity.viewModel.normalEvent.dispatchEvent(9012)
+                    activity.viewModel.normalEvent.post(1234)
+                    activity.viewModel.normalEvent.post(5678)
+                    activity.viewModel.normalEvent.post(9012)
                     assertEquals(0, activity.eventResults.size)
                     activity.lifecycle.removeObserver(this)
                 }
@@ -83,7 +83,7 @@ class WithActivity {
         // save activity instance in advance because it can't be done after destroyed
         scenario.onActivity { activity = it }
         scenario.moveToState(Lifecycle.State.DESTROYED)
-        activity.viewModel.normalEvent.dispatchEvent(1234)
+        activity.viewModel.normalEvent.post(1234)
         assertEquals(0, activity.eventResults.size)
     }
 
@@ -91,8 +91,8 @@ class WithActivity {
     fun recentHandlerReplacesPreviousOne() {
         val scenario = activityScenarioRule.scenario
         scenario.onActivity { activity ->
-            activity.viewModel.handledManyTimesEvent.dispatchEvent(1234)
-            activity.viewModel.handledManyTimesEvent.dispatchEvent(5678)
+            activity.viewModel.handledManyTimesEvent.post(1234)
+            activity.viewModel.handledManyTimesEvent.post(5678)
             assertEquals(0, activity.eventResults.size)
             assertEquals(2, activity.eventResults2.size)
             assertEquals(1234, activity.eventResults2[0])
@@ -104,15 +104,15 @@ class WithActivity {
     fun ignoreEventsBeforeFirstHandling() {
         val scenario = activityScenarioRule.scenario
         scenario.onActivity { activity ->
-            activity.viewModel.ignoredBeforeFirstHandlingEvent.dispatchEvent(1234)
-            activity.viewModel.ignoredBeforeFirstHandlingEvent.dispatchEvent(5678)
+            activity.viewModel.ignoredBeforeFirstHandlingEvent.post(1234)
+            activity.viewModel.ignoredBeforeFirstHandlingEvent.post(5678)
             assertEquals(0, activity.eventResults.size)
         }
         scenario.moveToState(Lifecycle.State.STARTED)
         scenario.onActivity { activity ->
             assertEquals(0, activity.eventResults.size)
-            activity.viewModel.ignoredBeforeFirstHandlingEvent.dispatchEvent("foo")
-            activity.viewModel.ignoredBeforeFirstHandlingEvent.dispatchEvent("bar")
+            activity.viewModel.ignoredBeforeFirstHandlingEvent.post("foo")
+            activity.viewModel.ignoredBeforeFirstHandlingEvent.post("bar")
             assertEquals(2, activity.eventResults.size)
             assertEquals("foo", activity.eventResults[0])
             assertEquals("bar", activity.eventResults[1])
@@ -128,10 +128,10 @@ class WithActivity {
         override fun onCreate(savedInstanceState: Bundle?) {
             super.onCreate(savedInstanceState)
             viewModel.run {
-                handleEvent(normalEvent) {
+                handle(normalEvent) {
                     eventResults += it
                 }
-                handleEvent(handledManyTimesEvent) {
+                handle(handledManyTimesEvent) {
                     eventResults += it
                 }
             }
@@ -140,7 +140,7 @@ class WithActivity {
         override fun onStart() {
             super.onStart()
             viewModel.run {
-                handleEvent(handledManyTimesEvent) {
+                handle(handledManyTimesEvent) {
                 }
             }
         }
@@ -148,7 +148,7 @@ class WithActivity {
         override fun onResume() {
             super.onResume()
             viewModel.run {
-                handleEvent(handledManyTimesEvent) {
+                handle(handledManyTimesEvent) {
                     eventResults2 += it
                 }
             }
@@ -156,7 +156,7 @@ class WithActivity {
 
         override fun onPause() {
             viewModel.run {
-                handleEvent(ignoredBeforeFirstHandlingEvent) {
+                handle(ignoredBeforeFirstHandlingEvent) {
                     eventResults += it
                 }
             }

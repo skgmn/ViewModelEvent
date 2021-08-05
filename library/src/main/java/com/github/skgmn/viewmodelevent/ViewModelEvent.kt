@@ -24,7 +24,7 @@ class ViewModelEvent<T : Any> {
         }
     }
 
-    fun dispatchEvent(event: T) {
+    fun post(event: T) {
         val queueList = synchronized(queues) {
             queues.values.toList()
         }
@@ -74,11 +74,11 @@ class ViewModelEvent<T : Any> {
 }
 
 @MainThread
-fun <T : Any> ComponentActivity.handleEvent(event: ViewModelEvent<T>, handler: (T) -> Unit) {
+fun <T : Any> ComponentActivity.handle(event: ViewModelEvent<T>, handler: (T) -> Unit) {
     event.replaceHandler(this, this, handler)
 }
 
 @MainThread
-fun <T : Any> Fragment.handleEvent(event: ViewModelEvent<T>, handler: (T) -> Unit) {
+fun <T : Any> Fragment.handle(event: ViewModelEvent<T>, handler: (T) -> Unit) {
     event.replaceHandler(this, this, handler)
 }

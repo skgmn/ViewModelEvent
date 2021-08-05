@@ -7,6 +7,6 @@ class MainViewModel : ViewModel() {
     val navigateToChild = ViewModelEvent<Any>()
 
     fun navigateToChild() {
-        navigateToChild.dispatchEvent(Unit)
+        navigateToChild.post(Unit)
     }
 }
