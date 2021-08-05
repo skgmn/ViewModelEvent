@@ -4,8 +4,10 @@ import androidx.activity.ComponentActivity
 import androidx.annotation.GuardedBy
 import androidx.annotation.MainThread
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.*
-import kotlinx.coroutines.withContext
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.whenStarted
 import java.util.*
 import kotlin.collections.set
 

@@ -42,7 +42,7 @@ internal class EventHandlerQueue<T>(private val backpressure: EventBackpressure)
                         // Radically, receiver should be reset to null when receiver is cancelled
                         // from the inside of it. But mere CancellationException cannot distinct the
                         // source of the cancellation, so just do not do that.
-                        // For now, receiver will be set to null from ViewModelEvent when receiver
+                        // For now, receiver is set to null from ViewModelEvent when receiver
                         // is cancelled because both conditions of them are same.
                         // (receiver is cancelled on onDestroy(), and just in time,
                         //  ViewModelEvent sets receiver null on onDestroy())
