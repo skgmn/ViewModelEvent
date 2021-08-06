@@ -25,7 +25,7 @@ open class Event<T : Any> internal constructor(protected val delivery: Delivery<
     internal fun replaceHandler(
         viewModelStoreOwner: ViewModelStoreOwner,
         lifecycleOwner: LifecycleOwner,
-        backpressure: EventBackpressure,
+        backpressure: DeliveryMode,
         handler: (T) -> Unit
     ) {
         val viewId = ViewModelProvider(viewModelStoreOwner).get(RetainedViewId::class.java)

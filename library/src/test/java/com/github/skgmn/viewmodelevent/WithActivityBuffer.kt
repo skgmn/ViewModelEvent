@@ -132,10 +132,10 @@ class WithActivityBuffer {
         override fun onCreate(savedInstanceState: Bundle?) {
             super.onCreate(savedInstanceState)
             viewModel.run {
-                handle(normalEvent, EventBackpressure.BUFFER) {
+                handle(normalEvent, DeliveryMode.ALL) {
                     eventResults += it
                 }
-                handle(handledManyTimesEvent, EventBackpressure.BUFFER) {
+                handle(handledManyTimesEvent, DeliveryMode.ALL) {
                     eventResults += it
                 }
             }
@@ -144,7 +144,7 @@ class WithActivityBuffer {
         override fun onStart() {
             super.onStart()
             viewModel.run {
-                handle(handledManyTimesEvent, EventBackpressure.BUFFER) {
+                handle(handledManyTimesEvent, DeliveryMode.ALL) {
                 }
             }
         }
@@ -152,7 +152,7 @@ class WithActivityBuffer {
         override fun onResume() {
             super.onResume()
             viewModel.run {
-                handle(handledManyTimesEvent, EventBackpressure.BUFFER) {
+                handle(handledManyTimesEvent, DeliveryMode.ALL) {
                     eventResults2 += it
                 }
             }
@@ -160,7 +160,7 @@ class WithActivityBuffer {
 
         override fun onPause() {
             viewModel.run {
-                handle(ignoredBeforeFirstHandlingEvent, EventBackpressure.BUFFER) {
+                handle(ignoredBeforeFirstHandlingEvent, DeliveryMode.ALL) {
                     eventResults += it
                 }
             }

@@ -133,10 +133,10 @@ class WithActivityLatest {
         override fun onCreate(savedInstanceState: Bundle?) {
             super.onCreate(savedInstanceState)
             viewModel.run {
-                handle(normalEvent, EventBackpressure.LATEST) {
+                handle(normalEvent, DeliveryMode.LATEST) {
                     eventResults += it
                 }
-                handle(handledManyTimesEvent, EventBackpressure.LATEST) {
+                handle(handledManyTimesEvent, DeliveryMode.LATEST) {
                     eventResults += it
                 }
             }
@@ -145,7 +145,7 @@ class WithActivityLatest {
         override fun onStart() {
             super.onStart()
             viewModel.run {
-                handle(handledManyTimesEvent, EventBackpressure.LATEST) {
+                handle(handledManyTimesEvent, DeliveryMode.LATEST) {
                 }
             }
         }
@@ -153,7 +153,7 @@ class WithActivityLatest {
         override fun onResume() {
             super.onResume()
             viewModel.run {
-                handle(handledManyTimesEvent, EventBackpressure.LATEST) {
+                handle(handledManyTimesEvent, DeliveryMode.LATEST) {
                     eventResults2 += it
                 }
             }
@@ -161,7 +161,7 @@ class WithActivityLatest {
 
         override fun onPause() {
             viewModel.run {
-                handle(ignoredBeforeFirstHandlingEvent, EventBackpressure.LATEST) {
+                handle(ignoredBeforeFirstHandlingEvent, DeliveryMode.LATEST) {
                     eventResults += it
                 }
             }

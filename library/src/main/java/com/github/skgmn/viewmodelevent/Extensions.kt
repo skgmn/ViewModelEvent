@@ -20,16 +20,16 @@ fun <T : Any> ViewModel.event(delivery: Delivery<T>): Event<T> {
 @MainThread
 fun <T : Any> ComponentActivity.handle(
     event: Event<T>,
-    backpressure: EventBackpressure = EventBackpressure.LATEST,
+    deliveryMode: DeliveryMode = DeliveryMode.LATEST,
     handler: (T) -> Unit
 ) {
-    event.replaceHandler(this, this, backpressure, handler)
+    event.replaceHandler(this, this, deliveryMode, handler)
 }
 
 @MainThread
 fun <T : Any> Fragment.handle(
     event: Event<T>,
-    backpressure: EventBackpressure = EventBackpressure.LATEST,
+    backpressure: DeliveryMode = DeliveryMode.LATEST,
     handler: (T) -> Unit
 ) {
     event.replaceHandler(this, this, backpressure, handler)

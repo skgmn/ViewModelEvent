@@ -1,24 +1,25 @@
 package com.github.skgmn.viewmodelevent
 
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
 
-internal class EventHandlerQueue<T>(private val backpressure: EventBackpressure) {
+internal class EventHandlerQueue<T>(private val backpressure: DeliveryMode) {
     private val emptyReceiver: suspend (T) -> Unit = { }
     private val scope = CoroutineScope(Dispatchers.Main.immediate)
     private val eventFlow = MutableSharedFlow<T>(
             extraBufferCapacity = backpressure.extraBufferCapacity,
-            onBufferOverflow = backpressure.onBufferOverflow
+            onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
     private val receiverFlow = MutableStateFlow(emptyReceiver)
 
     fun runConsumerLoop() {
         scope.launch {
-            if (backpressure == EventBackpressure.BUFFER) {
+            if (backpressure == DeliveryMode.ALL) {
                 eventFlow.collect { event ->
                     passToReceiver(event)
                 }
-            } else if (backpressure == EventBackpressure.LATEST) {
+            } else if (backpressure == DeliveryMode.LATEST) {
                 eventFlow.collectLatest { event ->
                     passToReceiver(event)
                 }
