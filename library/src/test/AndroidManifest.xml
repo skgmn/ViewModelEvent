@@ -4,10 +4,13 @@
 
     <application>
         <activity
-            android:name=".WithActivityBuffer$TestActivity"
+            android:name=".WithActivityAll$TestActivity"
             android:theme="@style/Theme.AppCompat" />
         <activity
             android:name=".WithActivityLatest$TestActivity"
+            android:theme="@style/Theme.AppCompat" />
+        <activity
+            android:name=".MultipleScreenHandleEvent$TestActivity"
             android:theme="@style/Theme.AppCompat" />
     </application>
 
