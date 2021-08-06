@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest package="com.github.skgmn.viewmodelevent"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <activity
+            android:name=".WithActivityAll$TestActivity"
+            android:theme="@style/Theme.AppCompat" />
+        <activity
+            android:name=".WithActivityLatest$TestActivity"
+            android:theme="@style/Theme.AppCompat" />
+        <activity
+            android:name=".MultipleScreenHandleEvent$TestActivity"
+            android:theme="@style/Theme.AppCompat" />
+    </application>
+
+</manifest>
