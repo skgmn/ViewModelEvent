@@ -18,8 +18,8 @@ class ViewModelEvent<T : Any> {
     @GuardedBy("queues")
     private val queues = IdentityHashMap<RetainedViewId, EventHandlerQueue<T>>()
 
-    private val viewIdContainer = object : RetainedViewIdContainer {
-        override fun onViewIdCleared(id: RetainedViewId) {
+    private val viewIdCallback = object : RetainedViewId.Callback {
+        override fun onViewIdInvalid(id: RetainedViewId) {
             synchronized(queues) {
                 queues.remove(id)?.dispose()
             }
@@ -54,7 +54,7 @@ class ViewModelEvent<T : Any> {
                     queues[viewId] ?: EventHandlerQueue<T>(backpressure).also {
                         queues[viewId] = it
                         it.runConsumerLoop()
-                        viewId.addContainer(viewIdContainer)
+                        viewId.addCallback(viewIdCallback)
                     }
                 }
                 queue.setReceiver { event ->

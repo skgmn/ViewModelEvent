@@ -1,38 +1,33 @@
 package com.github.skgmn.viewmodelevent
 
-import androidx.annotation.GuardedBy
+import androidx.annotation.MainThread
 import androidx.lifecycle.ViewModel
-import java.util.*
 
 // This is not really a ViewModel.
 // We just need an instance to be used as a key which corresponds to ViewModel's lifecycle.
 internal class RetainedViewId : ViewModel() {
     private var cleared = false
+    private val callbacks = mutableSetOf<Callback>()
 
-    @GuardedBy("containers")
-    private val containers: MutableSet<RetainedViewIdContainer> =
-            Collections.newSetFromMap(WeakHashMap())
-
-    fun addContainer(container: RetainedViewIdContainer) {
+    @MainThread
+    fun addCallback(callback: Callback) {
         if (cleared) {
-            container.onViewIdCleared(this)
+            callback.onViewIdInvalid(this)
             return
         }
-        synchronized(containers) {
-            containers += container
-        }
+        callbacks += callback
     }
 
     override fun onCleared() {
         super.onCleared()
         cleared = true
-        val capturedContainers = synchronized(containers) {
-            containers.toList().also {
-                containers.clear()
-            }
+        callbacks.forEach {
+            it.onViewIdInvalid(this)
         }
-        capturedContainers.forEach {
-            it.onViewIdCleared(this)
-        }
+        callbacks.clear()
+    }
+
+    interface Callback {
+        fun onViewIdInvalid(id: RetainedViewId)
     }
 }
