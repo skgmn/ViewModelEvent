@@ -24,6 +24,15 @@ So I wanted to write my own library and this is the result.
   * `LATEST` - Only receive the latest event. This is default behavior because it's pretty enough in general cases.
   * `ALL` - Receive all events. Events will be buffered while Activity or Fragment is stopped.
 
+# Setup
+
+```
+dependencies {
+    implementation "com.github.skgmn:viewmodelevent:1.0.0"
+}
+```
+If you don't know how to access to GitHub Packges, please refer to [this](https://gist.github.com/skgmn/79da4a935e904078491e932bd5b327c7).
+
 # Usage
 
 ## Basic Usage
