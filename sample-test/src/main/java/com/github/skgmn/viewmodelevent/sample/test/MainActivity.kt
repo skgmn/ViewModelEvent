@@ -18,7 +18,7 @@ class MainActivity : AppCompatActivity() {
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main)
         binding.viewModel = viewModel
 
-        handle(viewModel.navigateToChild) {
+        handle(viewModel.navigateToChildEvent) {
             startActivity(Intent(this, ChildActivity::class.java))
         }
     }

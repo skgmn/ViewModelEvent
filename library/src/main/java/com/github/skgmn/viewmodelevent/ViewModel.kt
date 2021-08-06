@@ -3,7 +3,7 @@ package com.github.skgmn.viewmodelevent
 import androidx.lifecycle.ViewModel
 import java.util.*
 
-class ViewModel : ViewModel() {
+open class ViewModel : ViewModel() {
     private val deliveries = IdentityHashMap<Event<*>, Delivery<*>>()
 
     protected fun <T : Any> event(): Event<T> {

@@ -1,12 +1,11 @@
 package com.github.skgmn.viewmodelevent.sample.test
 
-import androidx.lifecycle.ViewModel
-import com.github.skgmn.viewmodelevent.Event
+import com.github.skgmn.viewmodelevent.ViewModel
 
 class MainViewModel : ViewModel() {
-    val navigateToChild = Event<Any>()
+    val navigateToChildEvent = event<Any>()
 
     fun navigateToChild() {
-        navigateToChild.post(Unit)
+        navigateToChildEvent.post(Unit)
     }
 }
