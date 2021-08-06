@@ -169,8 +169,8 @@ class WithActivityBuffer {
     }
 
     class TestViewModel : ViewModel() {
-        val normalEvent = ViewModelEvent<Any>()
-        val handledManyTimesEvent = ViewModelEvent<Any>()
-        val ignoredBeforeFirstHandlingEvent = ViewModelEvent<Any>()
+        val normalEvent = publicEvent<Any>()
+        val handledManyTimesEvent = publicEvent<Any>()
+        val ignoredBeforeFirstHandlingEvent = publicEvent<Any>()
     }
 }
