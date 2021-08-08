@@ -5,13 +5,12 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
 
 internal class EventHandlerQueue<T>(private val backpressure: DeliveryMode) {
-    private val emptyReceiver: suspend (T) -> Unit = { }
     private val scope = CoroutineScope(Dispatchers.Main.immediate)
     private val eventFlow = MutableSharedFlow<T>(
-            extraBufferCapacity = backpressure.extraBufferCapacity,
-            onBufferOverflow = BufferOverflow.DROP_OLDEST
+        extraBufferCapacity = backpressure.extraBufferCapacity,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
-    private val receiverFlow = MutableStateFlow(emptyReceiver)
+    private val receiverFlow = MutableStateFlow(emptyReceiver<T>())
 
     fun runConsumerLoop() {
         scope.launch {
@@ -31,7 +30,7 @@ internal class EventHandlerQueue<T>(private val backpressure: DeliveryMode) {
         try {
             coroutineScope {
                 receiverFlow.collectLatest { receiver ->
-                    if (receiver === emptyReceiver) {
+                    if (receiver === emptyReceiver<T>()) {
                         return@collectLatest
                     }
                     try {
@@ -57,7 +56,7 @@ internal class EventHandlerQueue<T>(private val backpressure: DeliveryMode) {
     }
 
     fun setReceiver(receiver: (suspend (T) -> Unit)?) {
-        receiverFlow.value = receiver ?: emptyReceiver
+        receiverFlow.value = receiver ?: emptyReceiver()
     }
 
     fun offer(event: T) {
@@ -66,5 +65,11 @@ internal class EventHandlerQueue<T>(private val backpressure: DeliveryMode) {
 
     fun dispose() {
         scope.cancel()
+    }
+
+    companion object {
+        private val EMPTY_RECEIVER: suspend (Any?) -> Unit = {}
+
+        private fun <T> emptyReceiver(): suspend (T) -> Unit = EMPTY_RECEIVER
     }
 }
