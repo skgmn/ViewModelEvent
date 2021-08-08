@@ -18,6 +18,6 @@ open class ViewModel : ViewModel() {
     @Suppress("UNCHECKED_CAST")
     protected fun <T : Any> Event<T>.post(event: T) {
         (deliveries[this] as? Delivery<T>)?.post(event)
-            ?: throw RuntimeException("Illegal usage")
+            ?: throw RuntimeException("Cannot access to other ViewModel's event")
     }
 }
