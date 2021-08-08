@@ -38,6 +38,36 @@ class MultipleScreenHandleEvent {
         }
     }
 
+    @Test
+    fun differentLifecycle() {
+        val scenario = activityScenarioRule.scenario
+        scenario.onActivity { activity ->
+            activity.supportFragmentManager.beginTransaction()
+                .detach(activity.fragment2)
+                .commitNow()
+
+            activity.viewModel.normalEvent.post(1234)
+            activity.viewModel.normalEvent.post(5678)
+            activity.viewModel.normalEvent.post(9012)
+
+            assertEquals(3, activity.fragment1.eventResults.size)
+            assertEquals(1234, activity.fragment1.eventResults[0])
+            assertEquals(5678, activity.fragment1.eventResults[1])
+            assertEquals(9012, activity.fragment1.eventResults[2])
+
+            assertEquals(0, activity.fragment2.eventResults.size)
+
+            activity.supportFragmentManager.beginTransaction()
+                .attach(activity.fragment2)
+                .commitNow()
+
+            assertEquals(3, activity.fragment2.eventResults.size)
+            assertEquals(1234, activity.fragment2.eventResults[0])
+            assertEquals(5678, activity.fragment2.eventResults[1])
+            assertEquals(9012, activity.fragment2.eventResults[2])
+        }
+    }
+
     class TestActivity : AppCompatActivity() {
         val viewModel: TestViewModel by viewModels()
 
