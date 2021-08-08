@@ -4,7 +4,10 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
 
-internal class DeliveryQueue<T>(private val deliveryMode: DeliveryMode) {
+internal class DeliveryQueue<T>(
+    private val async: Boolean,
+    private val deliveryMode: DeliveryMode
+) {
     private val scope = CoroutineScope(Dispatchers.Main.immediate)
     private val itemFlow = MutableSharedFlow<T>(
         extraBufferCapacity = deliveryMode.extraBufferCapacity,
@@ -16,17 +19,27 @@ internal class DeliveryQueue<T>(private val deliveryMode: DeliveryMode) {
         scope.launch {
             if (deliveryMode == DeliveryMode.ALL) {
                 itemFlow.collect { event ->
-                    passToReceiver(event)
+                    startDelivery(this, event)
                 }
             } else if (deliveryMode == DeliveryMode.LATEST) {
                 itemFlow.collectLatest { event ->
-                    passToReceiver(event)
+                    startDelivery(this, event)
                 }
             }
         }
     }
 
-    private suspend fun passToReceiver(event: T) {
+    private suspend fun startDelivery(scope: CoroutineScope, item: T) {
+        if (async) {
+            scope.launch {
+                passToReceiver(item)
+            }
+        } else {
+            passToReceiver(item)
+        }
+    }
+
+    private suspend fun passToReceiver(item: T) {
         try {
             coroutineScope {
                 receiverFlow.collectLatest { receiver ->
@@ -34,19 +47,10 @@ internal class DeliveryQueue<T>(private val deliveryMode: DeliveryMode) {
                         return@collectLatest
                     }
                     try {
-                        receiver(event)
+                        receiver(item)
                         cancel()
                     } catch (e: CancellationException) {
-                        // This receiver is cancelled.
-                        //
-                        // Radically, receiver should be reset to null when receiver is cancelled
-                        // from the inside of it. But mere CancellationException cannot distinct the
-                        // source of the cancellation, so just do not do that.
-                        // For now, receiver is set to null from ViewModelEvent when receiver
-                        // is cancelled because both conditions of them are same.
-                        // (receiver is cancelled on onDestroy(), and just in time,
-                        //  ViewModelEvent sets receiver null on onDestroy())
-                        // I don't know what to do when this becomes not the case.
+                        // receiver is cancelled
                     }
                 }
             }

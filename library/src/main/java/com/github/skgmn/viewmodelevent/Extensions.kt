@@ -45,28 +45,20 @@ fun <T : Any> ComponentActivity.handle(
 }
 
 @MainThread
-fun <Q : Any, A : Any> ComponentActivity.answer(
-    survey: Survey<Q, A>,
-    deliveryMode: DeliveryMode = DeliveryMode.LATEST,
-    replier: suspend (Q) -> A
-) {
-    survey.replaceReplier(this, this, deliveryMode, replier)
+fun <Q : Any, A : Any> ComponentActivity.answer(survey: Survey<Q, A>, replier: suspend (Q) -> A) {
+    survey.replaceReplier(this, this, replier)
 }
 
 @MainThread
 fun <T : Any> Fragment.handle(
     event: Event<T>,
-    backpressure: DeliveryMode = DeliveryMode.LATEST,
+    deliveryMode: DeliveryMode = DeliveryMode.LATEST,
     handler: (T) -> Unit
 ) {
-    event.replaceHandler(this, this, backpressure, handler)
+    event.replaceHandler(this, this, deliveryMode, handler)
 }
 
 @MainThread
-fun <Q : Any, A : Any> Fragment.answer(
-    survey: Survey<Q, A>,
-    backpressure: DeliveryMode = DeliveryMode.LATEST,
-    replier: suspend (Q) -> A
-) {
-    survey.replaceReplier(this, this, backpressure, replier)
+fun <Q : Any, A : Any> Fragment.answer(survey: Survey<Q, A>, replier: suspend (Q) -> A) {
+    survey.replaceReplier(this, this, replier)
 }

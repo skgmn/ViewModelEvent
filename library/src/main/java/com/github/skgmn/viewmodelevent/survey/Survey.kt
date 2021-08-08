@@ -2,14 +2,15 @@ package com.github.skgmn.viewmodelevent.survey
 
 import androidx.annotation.GuardedBy
 import androidx.annotation.MainThread
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelStoreOwner
-import androidx.lifecycle.whenStarted
+import androidx.lifecycle.*
 import com.github.skgmn.viewmodelevent.DeliveryMode
 import com.github.skgmn.viewmodelevent.DeliveryQueue
 import com.github.skgmn.viewmodelevent.LifecycleBinder
 import com.github.skgmn.viewmodelevent.RetainedViewId
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.yield
 import java.util.*
 import kotlin.collections.set
 
@@ -29,7 +30,6 @@ open class Survey<Q : Any, A : Any> internal constructor(protected val poll: Pol
     internal fun replaceReplier(
         viewModelStoreOwner: ViewModelStoreOwner,
         lifecycleOwner: LifecycleOwner,
-        deliveryMode: DeliveryMode,
         replier: suspend (Q) -> A
     ) {
         val viewId = ViewModelProvider(viewModelStoreOwner).get(RetainedViewId::class.java)
@@ -41,11 +41,12 @@ open class Survey<Q : Any, A : Any> internal constructor(protected val poll: Pol
 
             val binder = LifecycleBinder(onReady = {
                 val queue = synchronized(poll.queues) {
-                    poll.queues[viewId] ?: DeliveryQueue<Questionnaire<Q, A>>(deliveryMode).also {
-                        poll.queues[viewId] = it
-                        it.runConsumerLoop()
-                        viewId.addCallback(viewIdCallback)
-                    }
+                    poll.queues[viewId]
+                        ?: DeliveryQueue<Questionnaire<Q, A>>(true, DeliveryMode.ALL).also {
+                            poll.queues[viewId] = it
+                            it.runConsumerLoop()
+                            viewId.addCallback(viewIdCallback)
+                        }
                 }
                 queue.setReceiver { questionnaire ->
                     lifecycleOwner.lifecycle.whenStarted {

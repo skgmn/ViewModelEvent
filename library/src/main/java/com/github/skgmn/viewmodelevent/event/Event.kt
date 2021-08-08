@@ -41,7 +41,7 @@ open class Event<T : Any> internal constructor(protected val delivery: Delivery<
 
             val binding = LifecycleBinder(onReady = {
                 val queue = synchronized(delivery.queues) {
-                    delivery.queues[viewId] ?: DeliveryQueue<T>(backpressure).also {
+                    delivery.queues[viewId] ?: DeliveryQueue<T>(false, backpressure).also {
                         delivery.queues[viewId] = it
                         it.runConsumerLoop()
                         viewId.addCallback(viewIdCallback)

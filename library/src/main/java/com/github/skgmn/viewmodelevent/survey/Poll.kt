@@ -3,18 +3,19 @@ package com.github.skgmn.viewmodelevent.survey
 import androidx.annotation.GuardedBy
 import com.github.skgmn.viewmodelevent.DeliveryQueue
 import com.github.skgmn.viewmodelevent.RetainedViewId
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.channelFlow
 import java.util.*
 
 class Poll<Q : Any, A: Any> internal constructor() {
     @GuardedBy("queues")
     internal val queues = IdentityHashMap<RetainedViewId, DeliveryQueue<Questionnaire<Q, A>>>()
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun ask(question: Q): Flow<A> {
-        return flow {
+        return channelFlow {
             val queueList = synchronized(queues) {
                 queues.values.toList()
             }
@@ -23,7 +24,7 @@ class Poll<Q : Any, A: Any> internal constructor() {
                 queueList.forEach {
                     it.offer(questionnaire)
                 }
-                questionnaire.waitAllAnswers()
+                awaitClose()
             }
         }
     }
