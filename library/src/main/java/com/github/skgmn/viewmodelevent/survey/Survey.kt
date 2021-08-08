@@ -39,6 +39,11 @@ open class Survey<Q : Any, A : Any> internal constructor(protected val poll: Pol
         synchronized(binders) {
             binders.remove(lifecycleOwner)?.unbind()
 
+            val receiver: suspend (Questionnaire<Q, A>) -> Unit = { questionnaire ->
+                lifecycleOwner.lifecycle.whenStarted {
+                    questionnaire.answer(replier(questionnaire.question))
+                }
+            }
             val binder = LifecycleBinder(onReady = {
                 val queue = synchronized(poll.queues) {
                     poll.queues[viewId]
@@ -48,14 +53,10 @@ open class Survey<Q : Any, A : Any> internal constructor(protected val poll: Pol
                             viewId.addCallback(viewIdCallback)
                         }
                 }
-                queue.setReceiver { questionnaire ->
-                    lifecycleOwner.lifecycle.whenStarted {
-                        questionnaire.answer(replier(questionnaire.question))
-                    }
-                }
+                queue.setReceiver(receiver)
             }, onUnbind = {
                 synchronized(poll.queues) {
-                    poll.queues[viewId]?.setReceiver(null)
+                    poll.queues[viewId]?.compareAndSetReceiver(receiver, null)
                 }
                 synchronized(binders) {
                     binders -= lifecycleOwner

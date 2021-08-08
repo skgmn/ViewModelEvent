@@ -63,6 +63,10 @@ internal class DeliveryQueue<T>(
         receiverFlow.value = receiver ?: emptyReceiver()
     }
 
+    fun compareAndSetReceiver(expect: (suspend (T) -> Unit)?, receiver: (suspend (T) -> Unit)?) {
+        receiverFlow.compareAndSet(expect ?: emptyReceiver<T>(), receiver ?: emptyReceiver<T>())
+    }
+
     fun offer(item: T) {
         itemFlow.tryEmit(item)
     }

@@ -39,6 +39,11 @@ open class Event<T : Any> internal constructor(protected val delivery: Delivery<
         synchronized(bindings) {
             bindings.remove(lifecycleOwner)?.unbind()
 
+            val receiver: suspend (T) -> Unit = { event ->
+                lifecycleOwner.lifecycle.whenStarted {
+                    handler(event)
+                }
+            }
             val binding = LifecycleBinder(onReady = {
                 val queue = synchronized(delivery.queues) {
                     delivery.queues[viewId] ?: DeliveryQueue<T>(false, backpressure).also {
@@ -47,14 +52,10 @@ open class Event<T : Any> internal constructor(protected val delivery: Delivery<
                         viewId.addCallback(viewIdCallback)
                     }
                 }
-                queue.setReceiver { event ->
-                    lifecycleOwner.lifecycle.whenStarted {
-                        handler(event)
-                    }
-                }
+                queue.setReceiver(receiver)
             }, onUnbind = {
                 synchronized(delivery.queues) {
-                    delivery.queues[viewId]?.setReceiver(null)
+                    delivery.queues[viewId]?.compareAndSetReceiver(receiver, null)
                 }
                 synchronized(bindings) {
                     bindings -= lifecycleOwner
