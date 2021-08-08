@@ -13,7 +13,7 @@ import com.github.skgmn.viewmodelevent.RetainedViewId
 import java.util.*
 import kotlin.collections.set
 
-open class Event<T : Any> internal constructor(protected val delivery: Delivery<T>) {
+open class Event<T> internal constructor(protected val delivery: Delivery<T>) {
     @GuardedBy("bindings")
     private val bindings = WeakHashMap<LifecycleOwner, LifecycleBinder>()
 

@@ -15,14 +15,14 @@ open class ViewModel : ViewModel() {
         IdentityHashMap<Survey<*, *>, Poll<*, *>>()
     }
 
-    protected fun <T : Any> event(): Event<T> {
+    protected fun <T> event(): Event<T> {
         val delivery = Delivery<T>()
         val event = Event(delivery)
         deliveries[event] = delivery
         return event
     }
 
-    protected fun <Q : Any, A : Any> survey(): Survey<Q, A> {
+    protected fun <Q, A> survey(): Survey<Q, A> {
         val poll = Poll<Q, A>()
         val survey = Survey(poll)
         polls[survey] = poll
@@ -30,13 +30,13 @@ open class ViewModel : ViewModel() {
     }
 
     @Suppress("UNCHECKED_CAST")
-    protected fun <T : Any> Event<T>.post(event: T) {
+    protected fun <T> Event<T>.post(event: T) {
         (deliveries[this] as? Delivery<T>)?.post(event)
             ?: throw RuntimeException("Cannot access to other ViewModel's event")
     }
 
     @Suppress("UNCHECKED_CAST")
-    protected fun <Q : Any, A : Any> Survey<Q, A>.ask(question: Q) {
+    protected fun <Q, A> Survey<Q, A>.ask(question: Q) {
         (polls[this] as? Poll<Q, A>)?.ask(question)
             ?: throw RuntimeException("Cannot access to other ViewModel's survey")
     }

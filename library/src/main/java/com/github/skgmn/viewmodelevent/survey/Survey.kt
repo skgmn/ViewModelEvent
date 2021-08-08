@@ -2,19 +2,18 @@ package com.github.skgmn.viewmodelevent.survey
 
 import androidx.annotation.GuardedBy
 import androidx.annotation.MainThread
-import androidx.lifecycle.*
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.whenStarted
 import com.github.skgmn.viewmodelevent.DeliveryMode
 import com.github.skgmn.viewmodelevent.DeliveryQueue
 import com.github.skgmn.viewmodelevent.LifecycleBinder
 import com.github.skgmn.viewmodelevent.RetainedViewId
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.yield
 import java.util.*
 import kotlin.collections.set
 
-open class Survey<Q : Any, A : Any> internal constructor(protected val poll: Poll<Q, A>) {
+open class Survey<Q, A> internal constructor(protected val poll: Poll<Q, A>) {
     @GuardedBy("binders")
     private val binders = WeakHashMap<LifecycleOwner, LifecycleBinder>()
 

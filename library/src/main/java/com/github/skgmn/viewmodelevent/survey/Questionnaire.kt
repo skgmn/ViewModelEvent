@@ -5,7 +5,7 @@ import kotlinx.coroutines.channels.ProducerScope
 import java.util.concurrent.atomic.AtomicInteger
 
 @OptIn(ExperimentalCoroutinesApi::class)
-internal class Questionnaire<Q : Any, A : Any>(
+internal class Questionnaire<Q, A>(
     val question: Q,
     replierCount: Int,
     private val emitter: ProducerScope<A>

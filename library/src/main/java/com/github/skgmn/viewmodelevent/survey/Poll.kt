@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import java.util.*
 
-class Poll<Q : Any, A: Any> internal constructor() {
+class Poll<Q, A> internal constructor() {
     @GuardedBy("queues")
     internal val queues = IdentityHashMap<RetainedViewId, DeliveryQueue<Questionnaire<Q, A>>>()
 

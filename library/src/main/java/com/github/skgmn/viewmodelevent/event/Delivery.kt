@@ -5,7 +5,7 @@ import com.github.skgmn.viewmodelevent.DeliveryQueue
 import com.github.skgmn.viewmodelevent.RetainedViewId
 import java.util.*
 
-class Delivery<T : Any> internal constructor() {
+class Delivery<T> internal constructor() {
     @GuardedBy("queues")
     internal val queues = IdentityHashMap<RetainedViewId, DeliveryQueue<T>>()
 
