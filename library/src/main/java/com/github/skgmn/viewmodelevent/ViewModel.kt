@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import java.util.*
 
 open class ViewModel : ViewModel() {
-    private val deliveries = IdentityHashMap<Event<*>, Delivery<*>>()
+    private val deliveries by lazy(LazyThreadSafetyMode.NONE) {
+        IdentityHashMap<Event<*>, Delivery<*>>()
+    }
 
     protected fun <T : Any> event(): Event<T> {
         val delivery = Delivery<T>()
