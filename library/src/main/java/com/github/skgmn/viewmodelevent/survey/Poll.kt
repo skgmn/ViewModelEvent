@@ -18,11 +18,13 @@ class Poll<Q : Any, A: Any> internal constructor() {
             val queueList = synchronized(queues) {
                 queues.values.toList()
             }
-            val questionnaire = Questionnaire(question, queueList.size, this)
-            queueList.forEach {
-                it.offer(questionnaire)
+            if (queueList.isNotEmpty()) {
+                val questionnaire = Questionnaire(question, queueList.size, this)
+                queueList.forEach {
+                    it.offer(questionnaire)
+                }
+                questionnaire.waitAllAnswers()
             }
-            questionnaire.waitAllAnswers()
         }
     }
 }
