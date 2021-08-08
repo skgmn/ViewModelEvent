@@ -4,22 +4,22 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
 
-internal class EventHandlerQueue<T>(private val backpressure: DeliveryMode) {
+internal class DeliveryQueue<T>(private val deliveryMode: DeliveryMode) {
     private val scope = CoroutineScope(Dispatchers.Main.immediate)
-    private val eventFlow = MutableSharedFlow<T>(
-        extraBufferCapacity = backpressure.extraBufferCapacity,
+    private val itemFlow = MutableSharedFlow<T>(
+        extraBufferCapacity = deliveryMode.extraBufferCapacity,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
     private val receiverFlow = MutableStateFlow(emptyReceiver<T>())
 
     fun runConsumerLoop() {
         scope.launch {
-            if (backpressure == DeliveryMode.ALL) {
-                eventFlow.collect { event ->
+            if (deliveryMode == DeliveryMode.ALL) {
+                itemFlow.collect { event ->
                     passToReceiver(event)
                 }
-            } else if (backpressure == DeliveryMode.LATEST) {
-                eventFlow.collectLatest { event ->
+            } else if (deliveryMode == DeliveryMode.LATEST) {
+                itemFlow.collectLatest { event ->
                     passToReceiver(event)
                 }
             }
@@ -59,8 +59,8 @@ internal class EventHandlerQueue<T>(private val backpressure: DeliveryMode) {
         receiverFlow.value = receiver ?: emptyReceiver()
     }
 
-    fun offer(event: T) {
-        eventFlow.tryEmit(event)
+    fun offer(item: T) {
+        itemFlow.tryEmit(item)
     }
 
     fun dispose() {
