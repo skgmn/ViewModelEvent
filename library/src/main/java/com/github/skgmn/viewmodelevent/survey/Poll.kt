@@ -1,6 +1,7 @@
 package com.github.skgmn.viewmodelevent.survey
 
 import androidx.annotation.GuardedBy
+import com.github.skgmn.viewmodelevent.AsyncDeliveryQueue
 import com.github.skgmn.viewmodelevent.DeliveryQueue
 import com.github.skgmn.viewmodelevent.RetainedViewId
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -11,7 +12,7 @@ import java.util.*
 
 class Poll<Q, A> internal constructor() {
     @GuardedBy("queues")
-    internal val queues = IdentityHashMap<RetainedViewId, DeliveryQueue<Questionnaire<Q, A>>>()
+    internal val queues = IdentityHashMap<RetainedViewId, AsyncDeliveryQueue<Questionnaire<Q, A>>>()
 
     @OptIn(ExperimentalCoroutinesApi::class)
     fun ask(question: Q): Flow<A> {

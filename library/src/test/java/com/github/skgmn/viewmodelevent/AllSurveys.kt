@@ -17,7 +17,7 @@ import org.junit.runner.RunWith
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
-class Surveys {
+class AllSurveys {
     @get:Rule
     val activityScenarioRule = activityScenarioRule<TestActivity>()
 
@@ -150,13 +150,13 @@ class Surveys {
         override fun onCreate(savedInstanceState: Bundle?) {
             super.onCreate(savedInstanceState)
             viewResponse = MutableSharedFlow(extraBufferCapacity = 1)
-            answer(viewModel.normalSurvey) {
+            answer(viewModel.normalSurvey, DeliveryMode.ALL) {
                 it.toString()
             }
-            answer(viewModel.pendingSurvey) {
+            answer(viewModel.pendingSurvey, DeliveryMode.ALL) {
                 it.first().toString()
             }
-            answer(viewModel.recreateSurvey) {
+            answer(viewModel.recreateSurvey, DeliveryMode.ALL) {
                 (viewResponse.first() * it).toString()
             }
         }

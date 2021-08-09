@@ -6,8 +6,8 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.whenStarted
-import com.github.skgmn.viewmodelevent.DeliveryMode
-import com.github.skgmn.viewmodelevent.DeliveryQueue
+import com.github.skgmn.viewmodelevent.*
+import com.github.skgmn.viewmodelevent.AsyncDeliveryQueue
 import com.github.skgmn.viewmodelevent.LifecycleBinder
 import com.github.skgmn.viewmodelevent.RetainedViewId
 import java.util.*
@@ -29,6 +29,7 @@ open class Survey<Q, A> internal constructor(protected val poll: Poll<Q, A>) {
     internal fun replaceReplier(
         viewModelStoreOwner: ViewModelStoreOwner,
         lifecycleOwner: LifecycleOwner,
+        deliveryMode: DeliveryMode,
         replier: suspend (Q) -> A
     ) {
         val viewId = ViewModelProvider(viewModelStoreOwner).get(RetainedViewId::class.java)
@@ -38,15 +39,19 @@ open class Survey<Q, A> internal constructor(protected val poll: Poll<Q, A>) {
         synchronized(binders) {
             binders.remove(lifecycleOwner)?.unbind()
 
-            val receiver: suspend (Questionnaire<Q, A>) -> Unit = { questionnaire ->
-                lifecycleOwner.lifecycle.whenStarted {
-                    questionnaire.answer(replier(questionnaire.question))
+            val receiver: suspend (AsyncDeliveryQueue.ReceiverState, Questionnaire<Q, A>) -> Unit =
+                { state, questionnaire ->
+                    lifecycleOwner.lifecycle.whenStarted {
+                        if (!state.trySetCancellable(false)) {
+                            return@whenStarted
+                        }
+                        questionnaire.answer(replier(questionnaire.question))
+                    }
                 }
-            }
             val binder = LifecycleBinder(onReady = {
                 val queue = synchronized(poll.queues) {
                     poll.queues[viewId]
-                        ?: DeliveryQueue<Questionnaire<Q, A>>(true, DeliveryMode.ALL).also {
+                        ?: AsyncDeliveryQueue<Questionnaire<Q, A>>(deliveryMode).also {
                             poll.queues[viewId] = it
                             it.runConsumerLoop()
                             viewId.addCallback(viewIdCallback)

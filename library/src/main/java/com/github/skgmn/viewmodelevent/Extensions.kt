@@ -45,8 +45,12 @@ fun <T> ComponentActivity.handle(
 }
 
 @MainThread
-fun <Q, A> ComponentActivity.answer(survey: Survey<Q, A>, replier: suspend (Q) -> A) {
-    survey.replaceReplier(this, this, replier)
+fun <Q, A> ComponentActivity.answer(
+    survey: Survey<Q, A>,
+    deliveryMode: DeliveryMode = DeliveryMode.LATEST,
+    replier: suspend (Q) -> A
+) {
+    survey.replaceReplier(this, this, deliveryMode, replier)
 }
 
 @MainThread
@@ -59,6 +63,10 @@ fun <T> Fragment.handle(
 }
 
 @MainThread
-fun <Q, A> Fragment.answer(survey: Survey<Q, A>, replier: suspend (Q) -> A) {
-    survey.replaceReplier(this, this, replier)
+fun <Q, A> Fragment.answer(
+    survey: Survey<Q, A>,
+    deliveryMode: DeliveryMode = DeliveryMode.LATEST,
+    replier: suspend (Q) -> A
+) {
+    survey.replaceReplier(this, this, deliveryMode, replier)
 }

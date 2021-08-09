@@ -6,10 +6,10 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.whenStarted
-import com.github.skgmn.viewmodelevent.*
-import com.github.skgmn.viewmodelevent.DeliveryQueue
+import com.github.skgmn.viewmodelevent.DeliveryMode
 import com.github.skgmn.viewmodelevent.LifecycleBinder
 import com.github.skgmn.viewmodelevent.RetainedViewId
+import com.github.skgmn.viewmodelevent.SyncDeliveryQueue
 import java.util.*
 import kotlin.collections.set
 
@@ -46,7 +46,7 @@ open class Event<T> internal constructor(protected val delivery: Delivery<T>) {
             }
             val binding = LifecycleBinder(onReady = {
                 val queue = synchronized(delivery.queues) {
-                    delivery.queues[viewId] ?: DeliveryQueue<T>(false, backpressure).also {
+                    delivery.queues[viewId] ?: SyncDeliveryQueue<T>(backpressure).also {
                         delivery.queues[viewId] = it
                         it.runConsumerLoop()
                         viewId.addCallback(viewIdCallback)
