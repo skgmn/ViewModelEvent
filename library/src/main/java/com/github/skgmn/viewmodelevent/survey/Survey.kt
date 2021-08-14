@@ -2,14 +2,13 @@ package com.github.skgmn.viewmodelevent.survey
 
 import androidx.annotation.GuardedBy
 import androidx.annotation.MainThread
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelStoreOwner
-import androidx.lifecycle.whenStarted
+import androidx.lifecycle.*
 import com.github.skgmn.viewmodelevent.*
 import com.github.skgmn.viewmodelevent.AsyncDeliveryQueue
 import com.github.skgmn.viewmodelevent.LifecycleBinder
 import com.github.skgmn.viewmodelevent.RetainedViewId
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.awaitCancellation
 import java.util.*
 import kotlin.collections.set
 
@@ -41,11 +40,24 @@ open class Survey<Q, A> internal constructor(protected val poll: Poll<Q, A>) {
 
             val receiver: suspend (AsyncDeliveryQueue.ReceiverState, Questionnaire<Q, A>) -> Unit =
                 { state, questionnaire ->
-                    lifecycleOwner.lifecycle.whenStarted {
-                        if (!state.trySetCancellable(false)) {
-                            return@whenStarted
+                    val lifecycle = lifecycleOwner.lifecycle
+                    try {
+                        lifecycle.whenStarted {
+                            if (!state.trySetCancellable(false)) {
+                                return@whenStarted
+                            }
+                            questionnaire.answer(replier(questionnaire.question))
                         }
-                        questionnaire.answer(replier(questionnaire.question))
+                    } catch (e: Throwable) {
+                        val cancelledByLifecycleDestroy =
+                            e is CancellationException &&
+                                    e !is AsyncDeliveryQueue.LatestCancellationException &&
+                                    lifecycle.currentState == Lifecycle.State.DESTROYED
+                        if (cancelledByLifecycleDestroy) {
+                            throw e
+                        } else {
+                            questionnaire.error(e)
+                        }
                     }
                 }
             val binder = LifecycleBinder(onReady = {

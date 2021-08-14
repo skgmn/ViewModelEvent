@@ -39,7 +39,7 @@ internal class AsyncDeliveryQueue<T>(
                     }
                     try {
                         receiver(receiverState, item)
-                        cancel()
+                        cancel(DeliveryCompletionException())
                     } catch (e: CancellationException) {
                         // receiver is cancelled
                     }
@@ -55,7 +55,7 @@ internal class AsyncDeliveryQueue<T>(
 
         fun tryCancel(): Boolean {
             return if (cancelState.compareAndSet(RECEIVER_CANCELLABLE, RECEIVER_CANCELED)) {
-                job.cancel()
+                job.cancel(LatestCancellationException())
                 true
             } else {
                 false
@@ -73,6 +73,10 @@ internal class AsyncDeliveryQueue<T>(
             return true
         }
     }
+
+    class DeliveryCompletionException : CancellationException()
+
+    class LatestCancellationException : CancellationException()
 
     companion object {
         private const val RECEIVER_CANCELLABLE = 0

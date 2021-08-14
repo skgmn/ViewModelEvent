@@ -15,6 +15,9 @@
         <activity
             android:name=".AllSurveys$TestActivity"
             android:theme="@style/Theme.AppCompat" />
+        <activity
+            android:name=".LatestSurveys$TestActivity"
+            android:theme="@style/Theme.AppCompat" />
     </application>
 
 </manifest>
