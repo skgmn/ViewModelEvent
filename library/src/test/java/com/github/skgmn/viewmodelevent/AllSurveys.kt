@@ -22,52 +22,49 @@ class AllSurveys {
     val activityScenarioRule = activityScenarioRule<TestActivity>()
 
     @Test
-    fun immediateWhenStarted() {
+    fun immediateWhenStarted() = runBlockingTest {
         val scenario = activityScenarioRule.scenario
-        scenario.onActivity { activity ->
-            runBlockingTest {
-                val answer1 = async {
-                    activity.viewModel.normalSurvey.ask(1234).singleOrNull()
-                }
-                val answer2 = async {
-                    activity.viewModel.normalSurvey.ask(5678).singleOrNull()
-                }
-                val answer3 = async {
-                    activity.viewModel.normalSurvey.ask(9012).singleOrNull()
-                }
+        val activity = scenario.getActivity()
 
-                assertEquals("1234", answer1.await())
-                assertEquals("5678", answer2.await())
-                assertEquals("9012", answer3.await())
-            }
+        val answer1 = async {
+            activity.viewModel.normalSurvey.ask(1234).singleOrNull()
         }
+        val answer2 = async {
+            activity.viewModel.normalSurvey.ask(5678).singleOrNull()
+        }
+        val answer3 = async {
+            activity.viewModel.normalSurvey.ask(9012).singleOrNull()
+        }
+
+        assertEquals("1234", answer1.await())
+        assertEquals("5678", answer2.await())
+        assertEquals("9012", answer3.await())
     }
 
     @Test
-    fun delayedOnStopStart() {
+    fun delayedOnStopStart() = runBlockingTest {
         val scenario = activityScenarioRule.scenario
+        val activity = scenario.getActivity()
+
         scenario.moveToState(Lifecycle.State.CREATED)
-        scenario.onActivity { activity ->
-            runBlockingTest {
-                val answer1 = async { activity.viewModel.normalSurvey.ask(1234).singleOrNull() }
-                val answer2 = async { activity.viewModel.normalSurvey.ask(5678).singleOrNull() }
-                val answer3 = async { activity.viewModel.normalSurvey.ask(9012).singleOrNull() }
 
-                assertFalse(answer1.isCompleted)
-                assertFalse(answer2.isCompleted)
-                assertFalse(answer3.isCompleted)
+        val answer1 = async { activity.viewModel.normalSurvey.ask(1234).singleOrNull() }
+        val answer2 = async { activity.viewModel.normalSurvey.ask(5678).singleOrNull() }
+        val answer3 = async { activity.viewModel.normalSurvey.ask(9012).singleOrNull() }
 
-                scenario.moveToState(Lifecycle.State.STARTED)
+        assertFalse(answer1.isCompleted)
+        assertFalse(answer2.isCompleted)
+        assertFalse(answer3.isCompleted)
 
-                assertTrue(answer1.isCompleted)
-                assertTrue(answer2.isCompleted)
-                assertTrue(answer3.isCompleted)
+        scenario.moveToState(Lifecycle.State.STARTED)
 
-                assertEquals("1234", answer1.await())
-                assertEquals("5678", answer2.await())
-                assertEquals("9012", answer3.await())
-            }
-        }
+        assertTrue(answer1.isCompleted)
+        assertTrue(answer2.isCompleted)
+        assertTrue(answer3.isCompleted)
+
+        assertEquals("1234", answer1.await())
+        assertEquals("5678", answer2.await())
+        assertEquals("9012", answer3.await())
     }
 
     @Test
@@ -76,70 +73,67 @@ class AllSurveys {
 
         lateinit var job: Job
 
-        scenario.onActivity { activity ->
-            activity.lifecycle.addObserver(object : DefaultLifecycleObserver {
-                override fun onDestroy(owner: LifecycleOwner) {
-                    job = activity.viewModel.viewModelScope.launch {
-                        val answer1 = async { activity.viewModel.recreateSurvey.ask(1234).single() }
-                        val answer2 = async { activity.viewModel.recreateSurvey.ask(5678).single() }
-                        assertEquals("3702", answer1.await())
-                        assertEquals("17034", answer2.await())
-                    }
-                    activity.lifecycle.removeObserver(this)
+        var activity = scenario.getActivity()
+        activity.lifecycle.addObserver(object : DefaultLifecycleObserver {
+            override fun onDestroy(owner: LifecycleOwner) {
+                job = activity.viewModel.viewModelScope.launch {
+                    val answer1 = async { activity.viewModel.recreateSurvey.ask(1234).single() }
+                    val answer2 = async { activity.viewModel.recreateSurvey.ask(5678).single() }
+                    assertEquals("3702", answer1.await())
+                    assertEquals("17034", answer2.await())
                 }
-            })
-        }
+                activity.lifecycle.removeObserver(this)
+            }
+        })
+
         scenario.recreate()
-        scenario.onActivity { activity ->
-            activity.viewResponse.tryEmit(3)
-        }
+        activity = scenario.getActivity()
+
+        activity.viewResponse.tryEmit(3)
+
         job.join()
     }
 
     @Test
     fun subscribeBeforeStopRecreateRespond(): Unit = runBlockingTest {
         val scenario = activityScenarioRule.scenario
+        var activity = scenario.getActivity()
 
-        lateinit var answer1: Deferred<String>
-        lateinit var answer2: Deferred<String>
+        val answer1 = async { activity.viewModel.recreateSurvey.ask(1234).single() }
+        val answer2 = async { activity.viewModel.recreateSurvey.ask(5678).single() }
 
-        scenario.onActivity { activity ->
-            answer1 = async { activity.viewModel.recreateSurvey.ask(1234).single() }
-            answer2 = async { activity.viewModel.recreateSurvey.ask(5678).single() }
-        }
         scenario.recreate()
-        scenario.onActivity { activity ->
-            activity.viewResponse.tryEmit(3)
-        }
+        activity = scenario.getActivity()
+
+        activity.viewResponse.tryEmit(3)
+
         assertEquals("3702", answer1.await())
         assertEquals("17034", answer2.await())
     }
 
     @Test
-    fun latterRespondEarlierThanFormer() {
+    fun latterRespondEarlierThanFormer() = runBlockingTest {
         val scenario = activityScenarioRule.scenario
-        scenario.onActivity { activity ->
-            runBlockingTest {
-                val signal1 = MutableSharedFlow<Int>()
-                val signal2 = MutableSharedFlow<Int>()
+        val activity = scenario.getActivity()
 
-                val answer1 = async { activity.viewModel.pendingSurvey.ask(signal1).singleOrNull() }
-                val answer2 = async { activity.viewModel.pendingSurvey.ask(signal2).singleOrNull() }
+        val signal1 = MutableSharedFlow<Int>()
+        val signal2 = MutableSharedFlow<Int>()
 
-                assertFalse(answer1.isCompleted)
-                assertFalse(answer2.isCompleted)
+        val answer1 = async { activity.viewModel.pendingSurvey.ask(signal1).singleOrNull() }
+        val answer2 = async { activity.viewModel.pendingSurvey.ask(signal2).singleOrNull() }
 
-                signal2.emit(5678)
+        assertFalse(answer1.isCompleted)
+        assertFalse(answer2.isCompleted)
 
-                assertFalse(answer1.isCompleted)
-                assertTrue(answer2.isCompleted)
-                assertEquals("5678", answer2.await())
+        signal2.emit(5678)
 
-                signal1.emit(1234)
-                assertTrue(answer1.isCompleted)
-                assertEquals("1234", answer1.await())
-            }
-        }
+        assertFalse(answer1.isCompleted)
+        assertTrue(answer2.isCompleted)
+        assertEquals("5678", answer2.await())
+
+        signal1.emit(1234)
+        assertTrue(answer1.isCompleted)
+        assertEquals("1234", answer1.await())
     }
 
     class TestActivity : AppCompatActivity() {
