@@ -4,7 +4,7 @@ import androidx.annotation.MainThread
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 
-internal class EventHandlerBinding(
+internal class LifecycleBinder(
         private val onReady: () -> Unit,
         private val onUnbind: () -> Unit) {
 

@@ -1,41 +1,15 @@
-# Introduction
-
-MVVM has become one of the most popular architecture for Android app development since Google has actively supported it. With MVVM architecture, it is always recommended to write data-oriented or state-oriented code, rather than event-driven code. Most ideal structure is like this: View subscribes ViewModel's data or states, renders UI, and redraws UI whenever data or states change.
-
-But in practice, sometimes it is inevitable to use event. The most typical example is screen navigation. It seems there are really no ways to start new activity according to data or state.
-
-In this case, mostly common way to achieve this was SingleLiveEvent. But there were some drawbacks to me to use them.
-
-* It was not comfortable to use.
-* It lacked features.
-* I just didn't like LiveData. I thought it had been technically inferior to RxJava and Flow.
-* It was not essentially a class for event messenger. It just feels like improvised.
-* Most of all, there was no official aar package uploaded to maven repository...
-
-So I wanted to write my own library and this is the result.
-
-# Features
-
-* Easy to use
-* Handle events in Activity or Fragment, post events from ViewModel
-* Event handler only runs between onStart() and onStop(), like SingleLiveEvent
-* Multiple Activity or Fragment can handle same event at the same time.
-* Delivery mode is supported.
-  * `LATEST` - Only receive the latest event. This is default behavior because it's pretty enough in general cases.
-  * `ALL` - Receive all events. Events will be buffered while Activity or Fragment is stopped.
-
 # Setup
 
 ```
 dependencies {
-    implementation "com.github.skgmn:viewmodelevent:1.0.0"
+    implementation "com.github.skgmn:viewmodelevent:1.1.0"
 }
 ```
 If you don't know how to access to GitHub Packges, please refer to [this](https://gist.github.com/skgmn/79da4a935e904078491e932bd5b327c7).
 
 # Usage
 
-## Basic Usage
+## Basic Usage of Event
 
 ```kotlin
 class MyViewModel : ViewModel() {
@@ -90,18 +64,64 @@ class MyViewModel : com.github.skgmn.viewmodelevent.ViewModel() {
 }
 ```
 
-# Implementation Details
+## Event Lifecycle
 
-* To keep it simple to use, an Activity or a Fragment cannot handle same event multiple times. For example, code below may not work as intended. The latter handler replaces the former one so it only shows dialog.
+### Event delivery occurs only between onStart() and onStop()
+
+The lambda function passed to `handle()` is only invoked when its Activity or Fragment is between onStart() and onStop().
+
+### Events are buffered after onStop()
+
+Events posted after onStop() are buffered until the Activity or Fragment retarts. Only the latest item is buffered if `DeliveryMode.LATEST` is passed to `handle()`(this is the default behavior). Otherwise, all items are buffered if `DeliveryMode.ALL` is passed to `handle()`.
+
+### Events live across Activity recreation
+
+Events posted while Activity recreation can be delivered after it is recreated.
+
+## Multiple handling
+
+An Activity or Fragment can handle multiple events, but cannot handle the same event multiple times. Only the latest handler will work then.
+It is OK that several Activities or Fragments handle the same event at the same time. It can be useful when some ViewModels are shared by many Activities or Fragments.
+
+## Survey
+
+A `Survey` is a concept similar to `Event`, but it can reply to its sender.
+
 ```kotlin
-class MyActivity : Activity() {
+class MyViewModel : ViewModel() {
+    val mySurvey = survey<MyQuestion>()
+    
+    fun hello() {
+        viewModelScope.launch {
+            mySurvey.ask(MyQuestion()).collect { myAnswer ->
+                doSomethingWith(myAnswer)
+            }
+        }
+    }
+}
+
+class MyActivity : AppCompatActivity() {
+    private val viewModel: MyViewModel by viewModels()
+
     fun onCreate(savedInstanceState: Bundle?) {
-        handle(viewModel.myEvent) { showToast() }
-        handle(viewModel.myEvent) { showDialog() }
+        answer(viewModel.mySurvey) { question ->
+            MyAnswerTo(question)
+        }
     }
 }
 ```
-* Events which are emitted before the first handler is registered are ignored. But since the first handler starts listening, events are buffered when event handler goes off (Activity is stopped). This behavior remains until Activity or Fragment is totally destroyed (ViewModel is cleared).
+
+Event         | Survey         
+--------------|---------------
+publicEvent() | publicSurvey()
+delivery()    | poll()
+event()       | survey()
+post()        | ask()
+handle()      | answer()
+
+Unlike `Event`, `Survey` use coroutine.
+`Survey.ask()` returns `Flow`, and `Survey.answer()` accepts `suspend` lambda function.
+`Survey` also has same lifecycle as `Event`.
 
 # License
 

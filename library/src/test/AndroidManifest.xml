@@ -4,13 +4,25 @@
 
     <application>
         <activity
-            android:name=".WithActivityAll$TestActivity"
+            android:name=".AllEvents$TestActivity"
             android:theme="@style/Theme.AppCompat" />
         <activity
-            android:name=".WithActivityLatest$TestActivity"
+            android:name=".LatestEvents$TestActivity"
+            android:theme="@style/Theme.AppCompat" />
+        <activity
+            android:name=".AllSurveys$TestActivity"
+            android:theme="@style/Theme.AppCompat" />
+        <activity
+            android:name=".LatestSurveys$TestActivity"
             android:theme="@style/Theme.AppCompat" />
         <activity
             android:name=".MultipleScreenHandleEvent$TestActivity"
+            android:theme="@style/Theme.AppCompat" />
+        <activity
+            android:name=".MultipleScreenAnswerSurvey$TestActivity"
+            android:theme="@style/Theme.AppCompat" />
+        <activity
+            android:name=".SurveyOnRecreate$TestActivity"
             android:theme="@style/Theme.AppCompat" />
     </application>
 

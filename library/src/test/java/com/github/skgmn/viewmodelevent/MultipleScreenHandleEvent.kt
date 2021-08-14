@@ -8,34 +8,67 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.ViewModel
 import androidx.test.ext.junit.rules.activityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runBlockingTest
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
 class MultipleScreenHandleEvent {
     @get:Rule
     val activityScenarioRule = activityScenarioRule<TestActivity>()
 
     @Test
-    fun multipleHandling() {
+    fun multipleHandling() = runBlockingTest {
         val scenario = activityScenarioRule.scenario
-        scenario.onActivity { activity ->
-            activity.viewModel.normalEvent.post(1234)
-            activity.viewModel.normalEvent.post(5678)
-            activity.viewModel.normalEvent.post(9012)
+        val activity = scenario.getActivity()
 
-            assertEquals(3, activity.fragment1.eventResults.size)
-            assertEquals(1234, activity.fragment1.eventResults[0])
-            assertEquals(5678, activity.fragment1.eventResults[1])
-            assertEquals(9012, activity.fragment1.eventResults[2])
+        activity.viewModel.normalEvent.post(1234)
+        activity.viewModel.normalEvent.post(5678)
+        activity.viewModel.normalEvent.post(9012)
 
-            assertEquals(3, activity.fragment2.eventResults.size)
-            assertEquals(1234, activity.fragment2.eventResults[0])
-            assertEquals(5678, activity.fragment2.eventResults[1])
-            assertEquals(9012, activity.fragment2.eventResults[2])
-        }
+        assertEquals(3, activity.fragment1.eventResults.size)
+        assertEquals(1234, activity.fragment1.eventResults[0])
+        assertEquals(5678, activity.fragment1.eventResults[1])
+        assertEquals(9012, activity.fragment1.eventResults[2])
+
+        assertEquals(3, activity.fragment2.eventResults.size)
+        assertEquals(1234, activity.fragment2.eventResults[0])
+        assertEquals(5678, activity.fragment2.eventResults[1])
+        assertEquals(9012, activity.fragment2.eventResults[2])
+    }
+
+    @Test
+    fun differentLifecycle() = runBlockingTest {
+        val scenario = activityScenarioRule.scenario
+        val activity = scenario.getActivity()
+
+        activity.supportFragmentManager.beginTransaction()
+            .detach(activity.fragment2)
+            .commitNow()
+
+        activity.viewModel.normalEvent.post(1234)
+        activity.viewModel.normalEvent.post(5678)
+        activity.viewModel.normalEvent.post(9012)
+
+        assertEquals(3, activity.fragment1.eventResults.size)
+        assertEquals(1234, activity.fragment1.eventResults[0])
+        assertEquals(5678, activity.fragment1.eventResults[1])
+        assertEquals(9012, activity.fragment1.eventResults[2])
+
+        assertEquals(0, activity.fragment2.eventResults.size)
+
+        activity.supportFragmentManager.beginTransaction()
+            .attach(activity.fragment2)
+            .commitNow()
+
+        assertEquals(3, activity.fragment2.eventResults.size)
+        assertEquals(1234, activity.fragment2.eventResults[0])
+        assertEquals(5678, activity.fragment2.eventResults[1])
+        assertEquals(9012, activity.fragment2.eventResults[2])
     }
 
     class TestActivity : AppCompatActivity() {
