@@ -21,6 +21,9 @@
         <activity
             android:name=".MultipleScreenAnswerSurvey$TestActivity"
             android:theme="@style/Theme.AppCompat" />
+        <activity
+            android:name=".SurveyOnRecreate$TestActivity"
+            android:theme="@style/Theme.AppCompat" />
     </application>
 
 </manifest>

@@ -48,9 +48,12 @@ fun <T> ComponentActivity.handle(
 fun <Q, A> ComponentActivity.answer(
     survey: Survey<Q, A>,
     deliveryMode: DeliveryMode = DeliveryMode.LATEST,
+    onRecreate: OnRecreate = OnRecreate.RERUN,
     replier: suspend (Q) -> A
 ) {
-    survey.replaceReplier(this, this, deliveryMode, replier)
+    survey.replaceReplier(
+        this, this, deliveryMode, onRecreate, replier
+    )
 }
 
 @MainThread
@@ -66,7 +69,10 @@ fun <T> Fragment.handle(
 fun <Q, A> Fragment.answer(
     survey: Survey<Q, A>,
     deliveryMode: DeliveryMode = DeliveryMode.LATEST,
+    onRecreate: OnRecreate = OnRecreate.RERUN,
     replier: suspend (Q) -> A
 ) {
-    survey.replaceReplier(this, this, deliveryMode, replier)
+    survey.replaceReplier(
+        this, this, deliveryMode, onRecreate, replier
+    )
 }

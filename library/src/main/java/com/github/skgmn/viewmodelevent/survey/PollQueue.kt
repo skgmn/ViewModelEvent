@@ -9,7 +9,10 @@ import java.util.concurrent.atomic.AtomicInteger
 
 internal class PollQueue<Q, A>(
     private val deliveryMode: DeliveryMode
-) : BaseQueue<Questionnaire<Q, A>, suspend (PollQueue.ReceiverState, Questionnaire<Q, A>) -> Unit>(
+) : BaseQueue<
+        Questionnaire<Q, A>,
+        suspend (PollQueue.ReceiverState, Questionnaire<Q, A>) -> Boolean>(
+
     deliveryMode.extraBufferCapacity
 ) {
     override fun runConsumerLoop() {
@@ -39,11 +42,8 @@ internal class PollQueue<Q, A>(
                     if (receiver == null) {
                         return@collectLatest
                     }
-                    try {
-                        receiver(receiverState, item)
+                    if (receiver(receiverState, item)) {
                         cancel(DeliveryCompletionException())
-                    } catch (e: CancellationException) {
-                        // receiver is cancelled
                     }
                 }
             }
@@ -54,12 +54,12 @@ internal class PollQueue<Q, A>(
         }
     }
 
-    class ReceiverState(private val job: Job) {
+    internal class ReceiverState(private val job: Job) {
         private val cancelState = AtomicInteger(RECEIVER_CANCELLABLE)
 
         fun cancelByNextItem(): Boolean {
             return if (cancelState.compareAndSet(RECEIVER_CANCELLABLE, RECEIVER_CANCELED)) {
-                job.cancel()
+                job.cancel(CancelledByNextItemException())
                 true
             } else {
                 false
@@ -78,7 +78,13 @@ internal class PollQueue<Q, A>(
         }
     }
 
-    class DeliveryCompletionException : CancellationException()
+    internal class CancelledByNextItemException : CancellationException() {
+        override fun fillInStackTrace(): Throwable = this
+    }
+
+    internal class DeliveryCompletionException : CancellationException() {
+        override fun fillInStackTrace(): Throwable = this
+    }
 
     companion object {
         private const val RECEIVER_CANCELLABLE = 0

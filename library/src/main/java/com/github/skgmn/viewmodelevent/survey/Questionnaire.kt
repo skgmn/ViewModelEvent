@@ -30,5 +30,5 @@ internal class Questionnaire<Q, A>(
         }
     }
 
-    class Error(val cause: Throwable)
+    internal class Error(val cause: Throwable)
 }

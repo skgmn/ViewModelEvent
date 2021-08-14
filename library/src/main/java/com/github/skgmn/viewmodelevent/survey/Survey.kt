@@ -6,6 +6,7 @@ import androidx.lifecycle.*
 import com.github.skgmn.viewmodelevent.*
 import com.github.skgmn.viewmodelevent.LifecycleBinder
 import com.github.skgmn.viewmodelevent.RetainedViewId
+import kotlinx.coroutines.CancellationException
 import java.util.*
 import kotlin.collections.set
 
@@ -26,6 +27,7 @@ open class Survey<Q, A> internal constructor(protected val poll: Poll<Q, A>) {
         viewModelStoreOwner: ViewModelStoreOwner,
         lifecycleOwner: LifecycleOwner,
         deliveryMode: DeliveryMode,
+        onRecreate: OnRecreate,
         replier: suspend (Q) -> A
     ) {
         val viewId = ViewModelProvider(viewModelStoreOwner).get(RetainedViewId::class.java)
@@ -35,13 +37,24 @@ open class Survey<Q, A> internal constructor(protected val poll: Poll<Q, A>) {
         synchronized(binders) {
             binders.remove(lifecycleOwner)?.unbind()
 
-            val receiver: suspend (PollQueue.ReceiverState, Questionnaire<Q, A>) -> Unit =
+            val receiver: suspend (PollQueue.ReceiverState, Questionnaire<Q, A>) -> Boolean =
                 { state, questionnaire ->
-                    lifecycleOwner.lifecycle.whenStarted {
-                        if (!state.trySetCancellable(false)) {
-                            return@whenStarted
+                    val lifecycle = lifecycleOwner.lifecycle
+                    try {
+                        lifecycle.whenStarted {
+                            if (state.trySetCancellable(false)) {
+                                questionnaire.answer(replier(questionnaire.question))
+                            }
+                            true
                         }
-                        questionnaire.answer(replier(questionnaire.question))
+                    } catch (e: CancellationException) {
+                        val cancelledByDestroy = e !is PollQueue.CancelledByNextItemException &&
+                                lifecycle.currentState == Lifecycle.State.DESTROYED
+                        if (cancelledByDestroy && onRecreate == OnRecreate.RERUN) {
+                            false
+                        } else {
+                            throw e
+                        }
                     }
                 }
             val binder = LifecycleBinder(onReady = {
