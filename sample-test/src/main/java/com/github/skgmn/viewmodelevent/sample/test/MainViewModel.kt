@@ -1,11 +1,18 @@
 package com.github.skgmn.viewmodelevent.sample.test
 
+import androidx.lifecycle.viewModelScope
 import com.github.skgmn.viewmodelevent.ViewModel
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 class MainViewModel : ViewModel() {
-    val navigateToChildEvent = event<Any>()
+    val askUserToSelect = survey<String, Boolean>()
+    val feedback = event<Boolean>()
 
-    fun navigateToChild() {
-        navigateToChildEvent.post(Unit)
+    fun buttonAction() {
+        viewModelScope.launch {
+            val yesNo = askUserToSelect.ask("Select Yes or No").first()
+            feedback.post(yesNo)
+        }
     }
 }

@@ -5,6 +5,7 @@ import com.github.skgmn.viewmodelevent.event.Delivery
 import com.github.skgmn.viewmodelevent.event.Event
 import com.github.skgmn.viewmodelevent.survey.Poll
 import com.github.skgmn.viewmodelevent.survey.Survey
+import kotlinx.coroutines.flow.Flow
 import java.util.*
 
 open class ViewModel : ViewModel() {
@@ -36,8 +37,8 @@ open class ViewModel : ViewModel() {
     }
 
     @Suppress("UNCHECKED_CAST")
-    protected fun <Q, A> Survey<Q, A>.ask(question: Q) {
-        (polls[this] as? Poll<Q, A>)?.ask(question)
+    protected fun <Q, A> Survey<Q, A>.ask(question: Q): Flow<A> {
+        return (polls[this] as? Poll<Q, A>)?.ask(question)
             ?: throw RuntimeException("Cannot access to other ViewModel's survey")
     }
 }
