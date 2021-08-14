@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
-internal abstract class DeliveryQueue<Item, Receiver>(queueCapacity: Int) {
+internal abstract class BaseQueue<Item, Receiver>(queueCapacity: Int) {
     protected val scope = CoroutineScope(Dispatchers.Main.immediate)
     protected val itemFlow = MutableSharedFlow<Item>(
         extraBufferCapacity = queueCapacity,

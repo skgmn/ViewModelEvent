@@ -1,13 +1,15 @@
-package com.github.skgmn.viewmodelevent
+package com.github.skgmn.viewmodelevent.survey
 
+import com.github.skgmn.viewmodelevent.BaseQueue
+import com.github.skgmn.viewmodelevent.DeliveryMode
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import java.util.concurrent.atomic.AtomicInteger
 
-internal class AsyncDeliveryQueue<T>(
+internal class PollQueue<Q, A>(
     private val deliveryMode: DeliveryMode
-) : DeliveryQueue<T, suspend (AsyncDeliveryQueue.ReceiverState, T) -> Unit>(
+) : BaseQueue<Questionnaire<Q, A>, suspend (PollQueue.ReceiverState, Questionnaire<Q, A>) -> Unit>(
     deliveryMode.extraBufferCapacity
 ) {
     override fun runConsumerLoop() {
@@ -15,7 +17,7 @@ internal class AsyncDeliveryQueue<T>(
             var prevReceiverState: ReceiverState? = null
             itemFlow.collect { item ->
                 if (deliveryMode == DeliveryMode.LATEST) {
-                    prevReceiverState?.tryCancel()
+                    prevReceiverState?.cancelByNextItem()
                 }
 
                 lateinit var receiverState: ReceiverState
@@ -30,7 +32,7 @@ internal class AsyncDeliveryQueue<T>(
         }
     }
 
-    private suspend fun passToReceiver(receiverState: ReceiverState, item: T) {
+    private suspend fun passToReceiver(receiverState: ReceiverState, item: Questionnaire<Q, A>) {
         try {
             coroutineScope {
                 receiverFlow.collectLatest { receiver ->
@@ -45,17 +47,19 @@ internal class AsyncDeliveryQueue<T>(
                     }
                 }
             }
-        } catch (e: CancellationException) {
-            // canceled after successful event passing
+        } catch (e: Throwable) {
+            if (e !is DeliveryCompletionException) {
+                item.error(e)
+            }
         }
     }
 
     class ReceiverState(private val job: Job) {
         private val cancelState = AtomicInteger(RECEIVER_CANCELLABLE)
 
-        fun tryCancel(): Boolean {
+        fun cancelByNextItem(): Boolean {
             return if (cancelState.compareAndSet(RECEIVER_CANCELLABLE, RECEIVER_CANCELED)) {
-                job.cancel(LatestCancellationException())
+                job.cancel()
                 true
             } else {
                 false
@@ -75,8 +79,6 @@ internal class AsyncDeliveryQueue<T>(
     }
 
     class DeliveryCompletionException : CancellationException()
-
-    class LatestCancellationException : CancellationException()
 
     companion object {
         private const val RECEIVER_CANCELLABLE = 0

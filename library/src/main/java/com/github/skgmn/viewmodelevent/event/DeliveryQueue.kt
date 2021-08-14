@@ -1,12 +1,14 @@
-package com.github.skgmn.viewmodelevent
+package com.github.skgmn.viewmodelevent.event
 
+import com.github.skgmn.viewmodelevent.BaseQueue
+import com.github.skgmn.viewmodelevent.DeliveryMode
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 
-internal class SyncDeliveryQueue<T>(
+internal class DeliveryQueue<T>(
     private val deliveryMode: DeliveryMode
-) : DeliveryQueue<T, suspend (T) -> Unit>(deliveryMode.extraBufferCapacity) {
+) : BaseQueue<T, suspend (T) -> Unit>(deliveryMode.extraBufferCapacity) {
     override fun runConsumerLoop() {
         scope.launch {
             when (deliveryMode) {
